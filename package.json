@@ -1,0 +1,17 @@
+{
+  "name": "lightsale-ai-designer",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@lightsale/web",
+    "build": "npm run build --workspace=@lightsale/shared && npm run build --workspace=@lightsale/web",
+    "test": "npm run test --workspace=@lightsale/shared",
+    "lint": "npm run lint --workspace=@lightsale/web"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
