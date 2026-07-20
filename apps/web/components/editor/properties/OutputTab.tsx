@@ -4,6 +4,10 @@ import { useState } from "react";
 import type { OutputSettings } from "@lightsale/shared";
 import { useEditorStore } from "@/lib/editor/store";
 import {
+  downloadPdfBlob,
+  exportLightingPlanPdf,
+} from "@/lib/pdf/PdfExporter";
+import {
   fieldClassName,
   labelClassName,
   sectionClassName,
@@ -13,6 +17,7 @@ import {
   ArticleListPreview,
   ArticleListPreviewHeading,
 } from "./ArticleListPreview";
+import { Legend } from "./Legend";
 import { OutputPreview } from "./OutputPreview";
 
 type DrawingOptionKey =
@@ -43,9 +48,16 @@ export function OutputTab() {
   const projectName = useEditorStore((s) => s.projectName);
   const rooms = useEditorStore((s) => s.rooms);
   const luminaires = useEditorStore((s) => s.luminaires);
+  const scale = useEditorStore((s) => s.scale);
+  const floorPlanUrl = useEditorStore((s) => s.floorPlanUrl);
+  const floorPlanSize = useEditorStore((s) => s.floorPlanSize);
   const updateOutputSettings = useEditorStore((s) => s.updateOutputSettings);
 
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const productIds = luminaires.map((item) => item.productId);
 
   const patch = (updates: Partial<OutputSettings>) => {
     updateOutputSettings(updates);
@@ -54,6 +66,29 @@ export function OutputTab() {
   const ensureDate = () => {
     if (!outputSettings.outputDate) {
       patch({ outputDate: todayIsoDate() });
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setExporting(true);
+    setExportError(null);
+    try {
+      const { filename, blob } = await exportLightingPlanPdf({
+        rooms,
+        luminaires,
+        scale,
+        outputSettings,
+        projectName,
+        floorPlanUrl,
+        floorPlanSize,
+      });
+      downloadPdfBlob(filename, blob);
+    } catch (error) {
+      setExportError(
+        error instanceof Error ? error.message : "PDF export failed",
+      );
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -157,6 +192,11 @@ export function OutputTab() {
       </div>
 
       <div className={sectionClassName}>
+        <h4 className={subsectionTitleClassName}>Legend</h4>
+        <Legend productIds={productIds} />
+      </div>
+
+      <div className={sectionClassName}>
         <ArticleListPreviewHeading />
         <ArticleListPreview />
       </div>
@@ -171,12 +211,15 @@ export function OutputTab() {
         </button>
         <button
           type="button"
-          disabled
-          title="PDF export will be available in the next release"
-          className="w-full rounded bg-[var(--accent)] px-3 py-2 text-sm text-white opacity-50"
+          disabled={exporting}
+          onClick={() => void handleExportPdf()}
+          className="w-full rounded bg-[var(--accent)] px-3 py-2 text-sm text-white disabled:opacity-50"
         >
-          Export PDF — coming next
+          {exporting ? "Generating PDF…" : "Export PDF"}
         </button>
+        {exportError ? (
+          <p className="text-xs text-red-400">{exportError}</p>
+        ) : null}
       </div>
 
       {previewOpen ? (

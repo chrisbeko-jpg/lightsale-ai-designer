@@ -3,9 +3,11 @@
 import {
   buildArticleList,
   formatPositionNumbers,
+  getProductById,
   type ArticleListResult,
 } from "@lightsale/shared";
 import { useEditorStore } from "@/lib/editor/store";
+import { ProductColorDot, ProductThumbnail } from "./ProductThumbnail";
 import { subsectionTitleClassName } from "./editor-form-styles";
 
 export function useArticleListPreview(): ArticleListResult {
@@ -28,49 +30,38 @@ export function ArticleListPreview() {
 
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto rounded border border-[var(--border)]">
-        <table className="w-full min-w-[520px] text-left text-[11px]">
-          <thead className="border-b border-[var(--border)] bg-[var(--background)] text-[var(--muted)]">
-            <tr>
-              <th className="px-2 py-1.5 font-medium">Pos.</th>
-              <th className="px-2 py-1.5 font-medium">Article</th>
-              <th className="px-2 py-1.5 font-medium">Brand</th>
-              <th className="px-2 py-1.5 font-medium">Product</th>
-              <th className="px-2 py-1.5 font-medium text-right">Qty</th>
-              <th className="px-2 py-1.5 font-medium text-right">lm/ea</th>
-              <th className="px-2 py-1.5 font-medium text-right">W/ea</th>
-              <th className="px-2 py-1.5 font-medium text-right">Total W</th>
-            </tr>
-          </thead>
-          <tbody>
-            {result.rows.map((row) => (
-              <tr
-                key={row.productId}
-                className="border-b border-[var(--border)]/60"
-              >
-                <td className="px-2 py-1.5 text-white">
-                  {formatPositionNumbers(row.positionNumbers)}
-                </td>
-                <td className="px-2 py-1.5 text-white">{row.articleNumber}</td>
-                <td className="px-2 py-1.5 text-white">{row.brand}</td>
-                <td className="px-2 py-1.5 text-white">{row.productName}</td>
-                <td className="px-2 py-1.5 text-right text-white">
-                  {row.quantity}
-                </td>
-                <td className="px-2 py-1.5 text-right text-white">
-                  {row.luminousFluxPerLuminaire.toLocaleString("en-GB")}
-                </td>
-                <td className="px-2 py-1.5 text-right text-white">
-                  {row.powerPerLuminaire}
-                </td>
-                <td className="px-2 py-1.5 text-right text-white">
-                  {Math.round(row.totalWattage)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ul className="space-y-2">
+        {result.rows.map((row) => {
+          const product = getProductById(row.productId);
+          return (
+            <li
+              key={row.productId}
+              className="flex gap-2 rounded border border-[var(--border)] bg-[var(--background)] p-2"
+            >
+              <ProductColorDot productId={row.productId} className="mt-1" />
+              {product ? (
+                <ProductThumbnail product={product} size={48} showColorRing={false} />
+              ) : (
+                <div className="h-12 w-12 shrink-0 rounded bg-[var(--panel)]" />
+              )}
+              <div className="min-w-0 flex-1 text-[11px]">
+                <p className="font-medium text-white">
+                  {row.brand} — {row.productName}
+                </p>
+                <p className="text-[var(--muted)]">{row.articleNumber}</p>
+                <p className="text-[var(--foreground)]">
+                  Qty {row.quantity} · Pos. {formatPositionNumbers(row.positionNumbers)}
+                </p>
+                <p className="text-[var(--foreground)]">
+                  {row.luminousFluxPerLuminaire.toLocaleString("en-GB")} lm ·{" "}
+                  {row.powerPerLuminaire} W · Total{" "}
+                  {Math.round(row.totalWattage)} W
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
       <dl className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
         <dt className="text-[var(--muted)]">Total luminaires</dt>
         <dd className="text-right text-white">{result.totalLuminaires}</dd>
@@ -88,5 +79,5 @@ export function ArticleListPreview() {
 }
 
 export function ArticleListPreviewHeading() {
-  return <h4 className={subsectionTitleClassName}>Article list preview</h4>;
+  return <h4 className={subsectionTitleClassName}>Article list</h4>;
 }

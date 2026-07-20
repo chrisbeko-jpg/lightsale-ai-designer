@@ -110,3 +110,6 @@ export function EditorPropertiesPanel({
 export function getActivePropertiesTabLabel(tab: EditorPropertiesTab): string {
   return TABS.find((item) => item.id === tab)?.label ?? tab;
 }
+
+/** Sprint 3 alias for the left editor sidebar. */
+export const EditorSidebar = EditorPropertiesPanel;

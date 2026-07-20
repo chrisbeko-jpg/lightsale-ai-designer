@@ -7,7 +7,7 @@ import type { Point } from "@lightsale/shared";
 import { screenToCanvas } from "@lightsale/shared";
 import { useEditorStore } from "@/lib/editor/store";
 import { FloorPlanLayer } from "./FloorPlanLayer";
-import { LuminaireSymbol } from "./LuminaireSymbol";
+import { LuminaireSymbol, useLuminairePositionNumberMap } from "./LuminaireSymbol";
 import { RoomPolygon } from "./RoomPolygon";
 import { ScaleOverlay } from "./ScaleOverlay";
 
@@ -27,6 +27,8 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
   const drawDraftVertices = useEditorStore((s) => s.drawDraftVertices);
   const floorPlanUrl = useEditorStore((s) => s.floorPlanUrl);
   const floorPlanMimeType = useEditorStore((s) => s.floorPlanMimeType);
+  const outputSettings = useEditorStore((s) => s.outputSettings);
+  const positionNumbers = useLuminairePositionNumberMap();
 
   const pan = useEditorStore((s) => s.pan);
   const zoomAt = useEditorStore((s) => s.zoomAt);
@@ -178,6 +180,7 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
 
         {luminaires.map((luminaire) => {
           const room = rooms.find((item) => item.id === luminaire.roomId);
+          const showNumbers = outputSettings.showLuminaireNumbers;
           return (
             <LuminaireSymbol
               key={luminaire.id}
@@ -185,6 +188,11 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
               room={room}
               isSelected={luminaire.id === selectedLuminaireId}
               zoom={viewport.zoom}
+              positionNumber={
+                showNumbers
+                  ? positionNumbers.get(luminaire.id)
+                  : undefined
+              }
             />
           );
         })}

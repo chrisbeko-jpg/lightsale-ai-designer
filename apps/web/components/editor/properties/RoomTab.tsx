@@ -59,6 +59,12 @@ export function RoomTab() {
           </dd>
           <dt className="text-[var(--muted)]">Target lux</dt>
           <dd className="text-right text-white">{effectiveLux} lx</dd>
+          <dt className="text-[var(--muted)]">Required lumens</dt>
+          <dd className="text-right text-white">
+            {requiredLumens !== null
+              ? `${formatRequiredLumens(requiredLumens)} lm`
+              : "—"}
+          </dd>
         </dl>
       </div>
 
@@ -176,21 +182,6 @@ export function RoomTab() {
           ))}
         </select>
       </label>
-
-      <div className={`${sectionClassName} text-xs`}>
-        {requiredLumens !== null ? (
-          <p className="text-[var(--foreground)]">
-            Indicative required light output:{" "}
-            <span className="font-medium">
-              {formatRequiredLumens(requiredLumens)} lumen
-            </span>
-          </p>
-        ) : (
-          <p className="text-[var(--muted)]">
-            Set scale and room area to estimate indicative light output.
-          </p>
-        )}
-      </div>
     </div>
   );
 }

@@ -36,6 +36,9 @@ export const LightingProductSchema = z.object({
   suitableStylePresets: z.array(z.string().min(1)).min(1),
   imageUrl: z.string().url().optional(),
   articleNumber: z.string().min(1).optional(),
+  categoryIcon: z.string().min(1).optional(),
+  colourTemperatureKelvin: z.number().positive().optional(),
+  beamAngleDegrees: z.number().positive().optional(),
 });
 
 export type LightingProduct = z.infer<typeof LightingProductSchema>;
@@ -60,6 +63,8 @@ export const DEMO_LIGHTING_PRODUCTS: LightingProduct[] = [
     ],
     suitableStylePresets: ["functional", "minimal", "warm_modern"],
     articleNumber: "LS-DL-012",
+    colourTemperatureKelvin: 4000,
+    beamAngleDegrees: 90,
   },
   {
     id: "demo-surface-spot-18w",

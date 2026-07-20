@@ -9,6 +9,7 @@ import {
 } from "@lightsale/shared";
 import { useEditorStore } from "@/lib/editor/store";
 import { fieldClassName, labelClassName, sectionClassName, subsectionTitleClassName } from "./editor-form-styles";
+import { ProductThumbnail } from "./ProductThumbnail";
 
 export function SelectedLuminairePanel() {
   const selectedLuminaireId = useEditorStore((s) => s.selectedLuminaireId);
@@ -43,12 +44,18 @@ export function SelectedLuminairePanel() {
   return (
     <div className={sectionClassName}>
       <h4 className={subsectionTitleClassName}>Selected luminaire</h4>
-      <p className="text-xs text-white">
-        {product ? `${product.brand} — ${product.name}` : luminaire.productId}
-      </p>
-      {product?.articleNumber ? (
-        <p className="text-[11px] text-[var(--muted)]">{product.articleNumber}</p>
-      ) : null}
+      {product ? (
+        <div className="flex gap-2">
+          <ProductThumbnail product={product} size={64} />
+          <div className="min-w-0 text-xs">
+            <p className="font-medium text-white">{product.name}</p>
+            <p className="text-[var(--muted)]">{product.brand}</p>
+            <p className="text-[var(--muted)]">{product.articleNumber ?? "—"}</p>
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-white">{luminaire.productId}</p>
+      )}
 
       <label className={labelClassName}>
         X ({scale !== null ? "m" : "px"})

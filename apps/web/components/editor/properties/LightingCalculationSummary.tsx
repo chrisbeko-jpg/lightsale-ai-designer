@@ -62,7 +62,7 @@ export function LightingCalculationSummary({
             ? `${formatRequiredLumens(requiredLumens)} lm`
             : "—"}
         </dd>
-        <dt className="text-[var(--muted)]">Effective lm / luminaire</dt>
+        <dt className="text-[var(--muted)]">Effective lumens</dt>
         <dd className="text-right font-medium text-white">
           {estimate.effectiveLumensPerLuminaire !== null
             ? `${Math.round(estimate.effectiveLumensPerLuminaire)} lm`

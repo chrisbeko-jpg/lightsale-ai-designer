@@ -9,7 +9,7 @@ import {
 } from "@lightsale/shared";
 import { useEditorStore } from "@/lib/editor/store";
 import { fieldClassName, labelClassName, subsectionTitleClassName } from "./editor-form-styles";
-import { ProductSelector } from "./ProductSelector";
+import { ProductBrowser } from "./ProductBrowser";
 import { LightingCalculationSummary } from "./LightingCalculationSummary";
 import { SelectedLuminairePanel } from "./SelectedLuminairePanel";
 
@@ -86,11 +86,7 @@ export function LightingLayoutTab() {
 
   return (
     <div className="space-y-3">
-      <ProductSelector
-        room={room}
-        onPatch={patch}
-        prominent={room.selectedProductId === null}
-      />
+      <ProductBrowser room={room} onPatch={patch} />
 
       {selectedProduct ? (
         <LightingCalculationSummary

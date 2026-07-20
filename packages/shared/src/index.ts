@@ -176,3 +176,30 @@ export {
 } from "./schemas.js";
 
 export type { Luminaire, PlacementSource } from "./schemas.js";
+
+export {
+  PRODUCT_DISPLAY_COLOR_PALETTE,
+  getProductDisplayColor,
+  buildProductColorMap,
+  withAlpha,
+} from "./product-colors.js";
+
+export { buildProductLegend } from "./product-legend.js";
+export type { ProductLegendEntry } from "./product-legend.js";
+
+export {
+  PRODUCT_CATEGORY_LABELS,
+  productCategoryLabel,
+  defaultProductThumbnailPath,
+  resolveProductThumbnailUrl,
+  formatColourTemperature,
+  formatBeamAngle,
+} from "./product-display.js";
+
+export {
+  buildLightingPlanPdfFilename,
+  sanitizePdfProjectSlug,
+  extractPdfProjectMetadata,
+  PDF_DISCLAIMER,
+} from "./pdf-export-meta.js";
+export type { PdfProjectMetadata } from "./pdf-export-meta.js";
