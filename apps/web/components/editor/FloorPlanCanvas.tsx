@@ -7,6 +7,7 @@ import type { Point } from "@lightsale/shared";
 import { screenToCanvas } from "@lightsale/shared";
 import { useEditorStore } from "@/lib/editor/store";
 import { FloorPlanLayer } from "./FloorPlanLayer";
+import { LuminaireSymbol } from "./LuminaireSymbol";
 import { RoomPolygon } from "./RoomPolygon";
 import { ScaleOverlay } from "./ScaleOverlay";
 
@@ -19,7 +20,9 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
   const viewport = useEditorStore((s) => s.viewport);
   const activeTool = useEditorStore((s) => s.activeTool);
   const rooms = useEditorStore((s) => s.rooms);
+  const luminaires = useEditorStore((s) => s.luminaires);
   const selectedRoomId = useEditorStore((s) => s.selectedRoomId);
+  const selectedLuminaireId = useEditorStore((s) => s.selectedLuminaireId);
   const scaleDraftPoints = useEditorStore((s) => s.scaleDraftPoints);
   const drawDraftVertices = useEditorStore((s) => s.drawDraftVertices);
   const floorPlanUrl = useEditorStore((s) => s.floorPlanUrl);
@@ -30,6 +33,7 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
   const addScalePoint = useEditorStore((s) => s.addScalePoint);
   const addDrawVertex = useEditorStore((s) => s.addDrawVertex);
   const selectRoom = useEditorStore((s) => s.selectRoom);
+  const selectLuminaire = useEditorStore((s) => s.selectLuminaire);
 
   const [isPanning, setIsPanning] = useState(false);
   const [lastPointer, setLastPointer] = useState<Point | null>(null);
@@ -39,6 +43,19 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
       if (event.key === "Escape") {
         useEditorStore.getState().cancelDrawing();
         useEditorStore.getState().clearScaleDraft();
+        useEditorStore.getState().selectLuminaire(null);
+      }
+      if (
+        (event.key === "Delete" || event.key === "Backspace") &&
+        !(event.target instanceof HTMLInputElement) &&
+        !(event.target instanceof HTMLTextAreaElement) &&
+        !(event.target instanceof HTMLSelectElement)
+      ) {
+        useEditorStore.getState().deleteSelectedLuminaire();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === "d") {
+        event.preventDefault();
+        useEditorStore.getState().duplicateSelectedLuminaire();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -73,6 +90,9 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
   };
 
   const handlePointerDown = (event: KonvaEventObject<MouseEvent | TouchEvent>) => {
+    if (useEditorStore.getState().isDraggingLuminaire) {
+      return;
+    }
     const canvasPoint = getCanvasPoint(event);
 
     if (activeTool === "pan" || event.evt.shiftKey) {
@@ -97,6 +117,7 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
       const stage = event.target.getStage();
       if (stage && event.target === stage) {
         selectRoom(null);
+        selectLuminaire(null);
       }
       return;
     }
@@ -154,6 +175,19 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
             onSelect={() => selectRoom(room.id)}
           />
         ))}
+
+        {luminaires.map((luminaire) => {
+          const room = rooms.find((item) => item.id === luminaire.roomId);
+          return (
+            <LuminaireSymbol
+              key={luminaire.id}
+              luminaire={luminaire}
+              room={room}
+              isSelected={luminaire.id === selectedLuminaireId}
+              zoom={viewport.zoom}
+            />
+          );
+        })}
 
         {drawDraftVertices.length > 0 ? (
           <Line

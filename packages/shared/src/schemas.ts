@@ -204,9 +204,38 @@ export const FloorPlanAssetSchema = z.object({
 
 export type FloorPlanAsset = z.infer<typeof FloorPlanAssetSchema>;
 
+export const PLACEMENT_SOURCES = ["generated", "manual"] as const;
+export const PlacementSourceSchema = z.enum(PLACEMENT_SOURCES);
+export type PlacementSource = z.infer<typeof PlacementSourceSchema>;
+
+export const LuminaireSchema = z.object({
+  id: z.string().uuid(),
+  roomId: z.string().uuid(),
+  productId: z.string().min(1),
+  x: z.number(),
+  y: z.number(),
+  rotationDegrees: z.number(),
+  placementSource: PlacementSourceSchema,
+  createdAt: z.string().datetime(),
+});
+
+export type Luminaire = z.infer<typeof LuminaireSchema>;
+
+export function normalizeLuminaire(value: unknown): Luminaire {
+  return LuminaireSchema.parse(value);
+}
+
+export function normalizeLuminaires(value: unknown): Luminaire[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.map((item) => normalizeLuminaire(item));
+}
+
 export const ProjectDocumentSchema = z.object({
   scale: ScaleCalibrationSchema.nullable(),
   rooms: z.array(RoomSchema),
+  luminaires: z.array(LuminaireSchema).default([]),
   viewport: ViewportStateSchema.optional(),
 });
 
@@ -232,6 +261,7 @@ export type CreateProjectInput = z.infer<typeof CreateProjectInputSchema>;
 export const UpdateProjectDocumentInputSchema = z.object({
   scale: ScaleCalibrationSchema.nullable(),
   rooms: z.array(RoomSchema),
+  luminaires: z.array(LuminaireSchema).default([]),
   viewport: ViewportStateSchema.optional(),
 });
 
@@ -248,5 +278,6 @@ export const DEFAULT_VIEWPORT: ViewportState = {
 export const EMPTY_PROJECT_DOCUMENT: ProjectDocument = {
   scale: null,
   rooms: [],
+  luminaires: [],
   viewport: DEFAULT_VIEWPORT,
 };

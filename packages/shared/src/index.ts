@@ -99,3 +99,62 @@ export type {
 } from "./luminaire-quantity.js";
 
 export { migrateLegacyRoomFields } from "./room-migration.js";
+
+export {
+  isPointInPolygon,
+  polygonAxisAlignedBounds,
+} from "./point-in-polygon.js";
+export type { AxisAlignedBounds } from "./point-in-polygon.js";
+
+export {
+  GRID_PLACEMENT_CATEGORIES,
+  MANUAL_ONLY_PLACEMENT_CATEGORIES,
+  DEFAULT_LAYOUT_WALL_MARGIN_METRES,
+  supportsAutomaticGridPlacement,
+  isManualPlacementOnlyCategory,
+  chooseGridDimensions,
+  generateSymmetricGridPoints,
+  selectGridPointsForQuantity,
+  generateGridPlacementPoints,
+  countLuminairesForRoom,
+  compareRoomLuminaireQuantities,
+} from "./grid-placement.js";
+export type {
+  GridDimensions,
+  GenerateGridPlacementInput,
+  GenerateGridPlacementResult,
+} from "./grid-placement.js";
+
+export {
+  validateLayoutGeneration,
+  validateManualLuminairePlacement,
+} from "./layout-validation.js";
+export type {
+  LayoutGenerationValidation,
+  LayoutGenerationValidationInput,
+} from "./layout-validation.js";
+
+export {
+  createLuminairesFromGridPoints,
+  generateLuminairesForRoom,
+} from "./luminaire-placement.js";
+
+export {
+  countLuminairesOutsideRoom,
+  defaultManualLuminairePosition,
+  isLuminaireInsideRoom,
+  isRoomGeometryValid,
+  roomPolygonCentroid,
+} from "./luminaire-room.js";
+
+export { normalizeLoadedProjectDocument } from "./document-normalization.js";
+
+export {
+  LuminaireSchema,
+  PlacementSourceSchema,
+  PLACEMENT_SOURCES,
+  normalizeLuminaire,
+  normalizeLuminaires,
+} from "./schemas.js";
+
+export type { Luminaire, PlacementSource } from "./schemas.js";

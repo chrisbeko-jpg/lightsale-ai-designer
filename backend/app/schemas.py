@@ -145,6 +145,20 @@ class ViewportStateModel(BaseModel):
     offsetY: float
 
 
+PlacementSource = Literal["generated", "manual"]
+
+
+class LuminaireModel(BaseModel):
+    id: UUID
+    roomId: UUID
+    productId: str = Field(min_length=1)
+    x: float
+    y: float
+    rotationDegrees: float
+    placementSource: PlacementSource
+    createdAt: datetime
+
+
 class FloorPlanAssetModel(BaseModel):
     id: UUID
     fileName: str
@@ -157,6 +171,7 @@ class FloorPlanAssetModel(BaseModel):
 class ProjectDocumentModel(BaseModel):
     scale: ScaleCalibrationModel | None = None
     rooms: list[RoomModel] = Field(default_factory=list)
+    luminaires: list[LuminaireModel] = Field(default_factory=list)
     viewport: ViewportStateModel | None = None
 
 
@@ -176,6 +191,7 @@ class CreateProjectRequest(BaseModel):
 class UpdateProjectDocumentRequest(BaseModel):
     scale: ScaleCalibrationModel | None = None
     rooms: list[RoomModel] = Field(default_factory=list)
+    luminaires: list[LuminaireModel] = Field(default_factory=list)
     viewport: ViewportStateModel | None = None
 
 
@@ -191,5 +207,6 @@ def default_document() -> dict[str, Any]:
     return {
         "scale": None,
         "rooms": [],
+        "luminaires": [],
         "viewport": {"zoom": 1, "offsetX": 0, "offsetY": 0},
     }

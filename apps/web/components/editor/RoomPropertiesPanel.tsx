@@ -1,9 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import type { RoomPropertyPatch, RoomType } from "@lightsale/shared";
 import {
   calculateIndicativeLuminaireEstimate,
   calculateRequiredLumens,
+  compareRoomLuminaireQuantities,
+  countLuminairesForRoom,
+  countLuminairesOutsideRoom,
   defaultTargetLuxForRoomType,
   filterCompatibleProducts,
   formatAreaSquareMetres,
@@ -13,6 +17,8 @@ import {
   getProductById,
   isTargetLuxUnset,
   polygonAreaSquareMetres,
+  validateLayoutGeneration,
+  validateManualLuminairePlacement,
 } from "@lightsale/shared";
 import { useEditorStore } from "@/lib/editor/store";
 import {
@@ -28,9 +34,26 @@ const labelClassName = "block text-xs text-[var(--muted)]";
 
 export function RoomPropertiesPanel() {
   const selectedRoomId = useEditorStore((s) => s.selectedRoomId);
+  const selectedLuminaireId = useEditorStore((s) => s.selectedLuminaireId);
   const rooms = useEditorStore((s) => s.rooms);
+  const luminaires = useEditorStore((s) => s.luminaires);
   const scale = useEditorStore((s) => s.scale);
+  const layoutWallMarginMetres = useEditorStore((s) => s.layoutWallMarginMetres);
   const updateRoomProperties = useEditorStore((s) => s.updateRoomProperties);
+  const setLayoutWallMarginMetres = useEditorStore(
+    (s) => s.setLayoutWallMarginMetres,
+  );
+  const generateLightingLayout = useEditorStore((s) => s.generateLightingLayout);
+  const regenerateLightingLayout = useEditorStore(
+    (s) => s.regenerateLightingLayout,
+  );
+  const deleteSelectedLuminaire = useEditorStore((s) => s.deleteSelectedLuminaire);
+  const duplicateSelectedLuminaire = useEditorStore(
+    (s) => s.duplicateSelectedLuminaire,
+  );
+  const addLuminaireManually = useEditorStore((s) => s.addLuminaireManually);
+
+  const [layoutMessages, setLayoutMessages] = useState<string[]>([]);
 
   const room = rooms.find((item) => item.id === selectedRoomId) ?? null;
 
@@ -62,6 +85,42 @@ export function RoomPropertiesPanel() {
     room,
     product: selectedProduct,
   });
+
+  const placedCount = countLuminairesForRoom(luminaires, room.id);
+  const outsideCount = countLuminairesOutsideRoom(luminaires, room);
+  const quantityDifference = compareRoomLuminaireQuantities(
+    luminaireEstimate.quantity,
+    placedCount,
+  );
+
+  const layoutValidation = validateLayoutGeneration({
+    scale,
+    roomAreaSquareMetres: areaM2,
+    room,
+    product: selectedProduct,
+  });
+
+  const manualValidation = validateManualLuminairePlacement({
+    scale,
+    room,
+    product: selectedProduct,
+  });
+
+  const runGenerate = () => {
+    const warnings = generateLightingLayout(room.id);
+    setLayoutMessages(warnings);
+  };
+
+  const runRegenerate = () => {
+    const confirmed = window.confirm(
+      "Replace all luminaires in this room with a new generated layout?",
+    );
+    if (!confirmed) {
+      return;
+    }
+    const warnings = regenerateLightingLayout(room.id);
+    setLayoutMessages(warnings);
+  };
 
   const patch = (updates: RoomPropertyPatch) => {
     updateRoomProperties(room.id, updates);
@@ -296,6 +355,122 @@ export function RoomPropertiesPanel() {
           Indicative calculation only. Not a validated lighting calculation.
         </p>
       </div>
+
+      <div className="space-y-2 rounded border border-[var(--border)] bg-[var(--background)] p-3">
+        <h4 className="text-xs font-medium text-white">Lighting layout</h4>
+
+        <label className={labelClassName}>
+          Wall margin (m)
+          <input
+            type="number"
+            min="0"
+            step="0.1"
+            value={layoutWallMarginMetres}
+            onChange={(event) => {
+              const value = parseFloat(event.target.value);
+              if (Number.isFinite(value) && value >= 0) {
+                setLayoutWallMarginMetres(value);
+              }
+            }}
+            className={fieldClassName}
+          />
+        </label>
+
+        <dl className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+          <dt className="text-[var(--muted)]">Calculated qty</dt>
+          <dd className="text-right font-medium text-white">
+            {luminaireEstimate.quantity ?? "—"}
+          </dd>
+          <dt className="text-[var(--muted)]">Placed</dt>
+          <dd className="text-right font-medium text-white">{placedCount}</dd>
+          <dt className="text-[var(--muted)]">Difference</dt>
+          <dd
+            className={`text-right font-medium ${
+              quantityDifference !== null && quantityDifference !== 0
+                ? "text-amber-400"
+                : "text-white"
+            }`}
+          >
+            {quantityDifference === null
+              ? "—"
+              : quantityDifference > 0
+                ? `+${quantityDifference}`
+                : quantityDifference}
+          </dd>
+        </dl>
+
+        {outsideCount > 0 ? (
+          <p className="text-xs text-red-400">
+            {outsideCount} luminaire{outsideCount === 1 ? "" : "s"} outside room
+            boundary (adjust position or room shape).
+          </p>
+        ) : null}
+
+        {layoutValidation.manualPlacementOnly ? (
+          <p className="text-xs text-amber-400">Manual placement only for this product category.</p>
+        ) : null}
+
+        {!layoutValidation.canGenerate && layoutValidation.reason ? (
+          <p className="text-xs text-[var(--muted)]">{layoutValidation.reason}</p>
+        ) : null}
+
+        <button
+          type="button"
+          disabled={!layoutValidation.canGenerate || placedCount > 0}
+          onClick={runGenerate}
+          className="w-full rounded bg-[var(--accent)] px-3 py-2 text-sm text-white disabled:opacity-40"
+        >
+          Generate lighting layout
+        </button>
+
+        {placedCount > 0 ? (
+          <button
+            type="button"
+            disabled={!layoutValidation.canGenerate}
+            onClick={runRegenerate}
+            className="w-full rounded border border-[var(--border)] px-3 py-2 text-sm text-white disabled:opacity-40"
+          >
+            Regenerate layout
+          </button>
+        ) : null}
+
+        <button
+          type="button"
+          disabled={!manualValidation.ok}
+          onClick={() => addLuminaireManually(room.id)}
+          className="w-full rounded border border-[var(--border)] px-3 py-2 text-sm text-white disabled:opacity-40"
+        >
+          Add luminaire manually
+        </button>
+        {!manualValidation.ok && manualValidation.reason ? (
+          <p className="text-xs text-[var(--muted)]">{manualValidation.reason}</p>
+        ) : null}
+
+        {layoutMessages.map((message) => (
+          <p key={message} className="text-xs text-amber-400">
+            {message}
+          </p>
+        ))}
+      </div>
+
+      {selectedLuminaireId !== null ? (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => duplicateSelectedLuminaire()}
+            className="flex-1 rounded border border-[var(--border)] px-2 py-1.5 text-xs text-white"
+          >
+            Duplicate luminaire
+          </button>
+          <button
+            type="button"
+            onClick={() => deleteSelectedLuminaire()}
+            className="flex-1 rounded border border-red-500/60 px-2 py-1.5 text-xs text-red-300"
+          >
+            Delete luminaire
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
