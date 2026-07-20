@@ -18,5 +18,6 @@ async def init_db() -> None:
     from sqlalchemy import text
 
     async with engine.begin() as conn:
-        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
+        if settings.enable_postgis:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
         await conn.run_sync(Base.metadata.create_all)

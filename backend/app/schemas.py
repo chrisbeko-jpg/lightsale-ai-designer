@@ -1,10 +1,87 @@
 # Mirrors @lightsale/shared Zod schemas — keep field names in sync with packages/shared/src/schemas.ts
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+VALID_ROOM_TYPES = frozenset(
+    {
+        "living_room",
+        "kitchen",
+        "dining_room",
+        "bedroom",
+        "bathroom",
+        "hallway",
+        "home_office",
+        "open_office",
+        "private_office",
+        "meeting_room",
+        "reception",
+        "corridor",
+        "storage",
+        "toilet",
+        "technical_room",
+        "other",
+    }
+)
+
+VALID_STYLE_PRESETS = frozenset(
+    {
+        "functional",
+        "warm_modern",
+        "minimal",
+        "hotel_chic",
+        "industrial",
+        "architectural",
+        "custom",
+    }
+)
+
+LEGACY_ROOM_TYPE_MAP = {
+    "warehouse": "storage",
+    "office": "open_office",
+    "production": "technical_room",
+    "corridor": "corridor",
+}
+
+LEGACY_STYLE_PRESET_MAP = {
+    "standard": "functional",
+    "high-bay": "industrial",
+    "ambient": "warm_modern",
+    "task-focused": "functional",
+    "custom": "custom",
+}
+
+RoomType = Literal[
+    "living_room",
+    "kitchen",
+    "dining_room",
+    "bedroom",
+    "bathroom",
+    "hallway",
+    "home_office",
+    "open_office",
+    "private_office",
+    "meeting_room",
+    "reception",
+    "corridor",
+    "storage",
+    "toilet",
+    "technical_room",
+    "other",
+]
+CeilingType = Literal["suspended", "exposed", "grid", "sloped", "other"]
+StylePreset = Literal[
+    "functional",
+    "warm_modern",
+    "minimal",
+    "hotel_chic",
+    "industrial",
+    "architectural",
+    "custom",
+]
 
 
 class PointModel(BaseModel):
@@ -22,6 +99,44 @@ class RoomModel(BaseModel):
     id: UUID
     name: str = Field(min_length=1)
     vertices: list[PointModel] = Field(min_length=3)
+    roomType: RoomType = "other"
+    ceilingHeightMetres: float = Field(default=3.0, gt=0)
+    ceilingType: CeilingType = "exposed"
+    targetLux: float | None = None
+    stylePreset: StylePreset = "functional"
+    selectedProductId: str | None = None
+    utilisationFactor: float = Field(default=0.6, gt=0, le=1)
+    maintenanceFactor: float = Field(default=0.8, gt=0, le=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_fields(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        next_data = dict(data)
+        room_type = next_data.get("roomType")
+        if isinstance(room_type, str) and room_type not in VALID_ROOM_TYPES:
+            next_data["roomType"] = LEGACY_ROOM_TYPE_MAP.get(room_type, "other")
+        style = next_data.get("stylePreset")
+        if isinstance(style, str) and style not in VALID_STYLE_PRESETS:
+            next_data["stylePreset"] = LEGACY_STYLE_PRESET_MAP.get(
+                style, "functional"
+            )
+        if not isinstance(next_data.get("utilisationFactor"), (int, float)):
+            next_data["utilisationFactor"] = 0.6
+        if not isinstance(next_data.get("maintenanceFactor"), (int, float)):
+            next_data["maintenanceFactor"] = 0.8
+        product_id = next_data.get("selectedProductId")
+        if product_id is not None and not isinstance(product_id, str):
+            next_data["selectedProductId"] = None
+        return next_data
+
+    @field_validator("targetLux")
+    @classmethod
+    def validate_target_lux(cls, value: float | None) -> float | None:
+        if value is not None and value <= 0:
+            raise ValueError("targetLux must be positive when set")
+        return value
 
 
 class ViewportStateModel(BaseModel):

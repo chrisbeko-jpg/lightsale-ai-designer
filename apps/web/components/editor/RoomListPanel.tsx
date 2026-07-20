@@ -11,7 +11,6 @@ export function RoomListPanel() {
   const scale = useEditorStore((s) => s.scale);
   const selectedRoomId = useEditorStore((s) => s.selectedRoomId);
   const selectRoom = useEditorStore((s) => s.selectRoom);
-  const updateRoomName = useEditorStore((s) => s.updateRoomName);
   const deleteRoom = useEditorStore((s) => s.deleteRoom);
 
   if (rooms.length === 0) {
@@ -48,15 +47,7 @@ export function RoomListPanel() {
                 className="flex-1 text-left"
                 onClick={() => selectRoom(room.id)}
               >
-                <input
-                  type="text"
-                  value={room.name}
-                  onChange={(event) =>
-                    updateRoomName(room.id, event.target.value)
-                  }
-                  onClick={(event) => event.stopPropagation()}
-                  className="w-full bg-transparent font-medium outline-none"
-                />
+                <p className="font-medium">{room.name}</p>
                 <p className="text-xs text-[var(--muted)]">{area}</p>
               </button>
               <button

@@ -12,6 +12,7 @@ import { EditorToolbar } from "./EditorToolbar";
 import { FloorPlanCanvas } from "./FloorPlanCanvasClient";
 import { FloorPlanUpload } from "./FloorPlanUpload";
 import { RoomListPanel } from "./RoomListPanel";
+import { RoomPropertiesPanel } from "./RoomPropertiesPanel";
 import { ScaleCalibrationPanel } from "./ScaleCalibrationPanel";
 
 interface ProjectEditorProps {
@@ -149,6 +150,7 @@ export function ProjectEditor({ projectId }: ProjectEditorProps) {
         <aside className="w-80 shrink-0 space-y-4 overflow-y-auto border-l border-[var(--border)] bg-[var(--panel)] p-4">
           <FloorPlanUpload projectId={projectId} />
           <ScaleCalibrationPanel />
+          <RoomPropertiesPanel />
           <div>
             <h3 className="mb-2 text-sm font-medium">Rooms</h3>
             <RoomListPanel />

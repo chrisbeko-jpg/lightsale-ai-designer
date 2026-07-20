@@ -1,0 +1,6 @@
+backend/.venv
+backend/.pytest_cache
+backend/uploads
+**/.next
+**/node_modules
+.git

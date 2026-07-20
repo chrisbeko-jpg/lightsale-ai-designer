@@ -57,5 +57,10 @@ Thumbs.db
 .vscode/
 *.log
 
-# Vercel / misc
+# Vercel
 .vercel
+
+# Local env (keep examples)
+.env
+.env.local
+.env.*.local

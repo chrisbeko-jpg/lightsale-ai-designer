@@ -94,7 +94,11 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
     }
 
     if (activeTool === "select") {
-      selectRoom(null);
+      const stage = event.target.getStage();
+      if (stage && event.target === stage) {
+        selectRoom(null);
+      }
+      return;
     }
   };
 

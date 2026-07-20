@@ -1,8 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import type { Point, Project, Room, ScaleCalibration } from "@lightsale/shared";
-import { panViewport, zoomAtPoint } from "@lightsale/shared";
+import type { Point, Project, Room, RoomPropertyPatch, ScaleCalibration } from "@lightsale/shared";
+import { defaultRoomPropertyFields, getProductById, panViewport, selectedProductIdAfterRoomContextChange, targetLuxAfterRoomTypeChange, zoomAtPoint } from "@lightsale/shared";
 import { v4 as uuidv4 } from "uuid";
 import {
   canRedo,
@@ -36,7 +36,7 @@ interface EditorActions {
   addDrawVertex: (point: Point) => void;
   finishDrawingRoom: () => void;
   cancelDrawing: () => void;
-  updateRoomName: (roomId: string, name: string) => void;
+  updateRoomProperties: (roomId: string, patch: RoomPropertyPatch) => void;
   updateRoomVertex: (roomId: string, index: number, point: Point) => void;
   deleteRoom: (roomId: string) => void;
   mutateDocument: (
@@ -167,6 +167,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       id: uuidv4(),
       name: `Room ${roomNumber}`,
       vertices: state.drawDraftVertices.map((v) => ({ ...v })),
+      ...defaultRoomPropertyFields(),
     };
     get().mutateDocument((doc) => ({
       ...doc,
@@ -181,12 +182,36 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
   cancelDrawing: () => set({ drawDraftVertices: [] }),
 
-  updateRoomName: (roomId, name) =>
+  updateRoomProperties: (roomId, patch) =>
     get().mutateDocument((doc) => ({
       ...doc,
-      rooms: doc.rooms.map((room) =>
-        room.id === roomId ? { ...room, name } : room,
-      ),
+      rooms: doc.rooms.map((room) => {
+        if (room.id !== roomId) {
+          return room;
+        }
+        const next = { ...room, ...patch };
+        if (patch.roomType !== undefined) {
+          next.targetLux = targetLuxAfterRoomTypeChange(
+            room.targetLux,
+            patch.roomType,
+          );
+        }
+        if (patch.roomType !== undefined || patch.stylePreset !== undefined) {
+          const product =
+            next.selectedProductId !== null
+              ? getProductById(next.selectedProductId)
+              : undefined;
+          next.selectedProductId = selectedProductIdAfterRoomContextChange(
+            next.selectedProductId,
+            product,
+            next,
+          );
+        }
+        if (next.name.trim().length === 0) {
+          return room;
+        }
+        return next;
+      }),
     })),
 
   updateRoomVertex: (roomId, index, point) =>

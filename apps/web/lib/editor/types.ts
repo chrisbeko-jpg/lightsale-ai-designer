@@ -1,6 +1,5 @@
 import type { Point, ProjectDocument, Room, ScaleCalibration } from "@lightsale/shared";
-import { DEFAULT_VIEWPORT } from "@lightsale/shared";
-
+import { DEFAULT_VIEWPORT, normalizeRoom } from "@lightsale/shared";
 export type EditorTool = "select" | "pan" | "scale" | "draw-room";
 
 export interface EditorDocumentState {
@@ -54,7 +53,7 @@ export function toPersistedDocument(state: EditorDocumentState): ProjectDocument
 export function documentFromProject(document: ProjectDocument): EditorDocumentState {
   return {
     scale: document.scale,
-    rooms: document.rooms,
+    rooms: document.rooms.map((room) => normalizeRoom(room)),
   };
 }
 
