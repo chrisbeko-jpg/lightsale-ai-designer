@@ -128,4 +128,47 @@ describe("editor luminaire store", () => {
       "manual",
     );
   });
+
+  it("generates layout for track spot product", () => {
+    useEditorStore.setState({
+      rooms: [
+        {
+          ...baseRoom,
+          selectedProductId: "demo-track-spot-25w",
+        },
+      ],
+    });
+    const warnings = useEditorStore.getState().generateLightingLayout(roomId);
+    const luminaires = useEditorStore.getState().luminaires;
+    expect(luminaires.length).toBeGreaterThan(0);
+    expect(luminaires.every((item) => item.productId === "demo-track-spot-25w")).toBe(
+      true,
+    );
+    expect(
+      warnings.some((item) => item.includes("Manual placement only")),
+    ).toBe(false);
+  });
+
+  it("does not remove luminaires in other rooms when replacing one room", () => {
+    const otherRoomId = "550e8400-e29b-41d4-a716-446655440099";
+    useEditorStore.setState({
+      rooms: [
+        baseRoom,
+        {
+          ...baseRoom,
+          id: otherRoomId,
+          name: "Other",
+        },
+      ],
+    });
+    useEditorStore.getState().generateLightingLayout(roomId);
+    useEditorStore.getState().generateLightingLayout(otherRoomId);
+    expect(useEditorStore.getState().luminaires.some((l) => l.roomId === otherRoomId)).toBe(
+      true,
+    );
+    useEditorStore.getState().regenerateLightingLayout(roomId);
+    expect(useEditorStore.getState().luminaires.some((l) => l.roomId === otherRoomId)).toBe(
+      true,
+    );
+  });
 });

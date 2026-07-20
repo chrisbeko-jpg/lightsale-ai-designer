@@ -12,26 +12,6 @@ export const GRID_PLACEMENT_CATEGORIES = [
   "panel",
 ] as const satisfies readonly ProductCategory[];
 
-export const MANUAL_ONLY_PLACEMENT_CATEGORIES = [
-  "track_spot",
-  "pendant",
-  "linear",
-] as const satisfies readonly ProductCategory[];
-
-export function supportsAutomaticGridPlacement(
-  category: ProductCategory,
-): boolean {
-  return (GRID_PLACEMENT_CATEGORIES as readonly string[]).includes(category);
-}
-
-export function isManualPlacementOnlyCategory(
-  category: ProductCategory,
-): boolean {
-  return (MANUAL_ONLY_PLACEMENT_CATEGORIES as readonly string[]).includes(
-    category,
-  );
-}
-
 export const DEFAULT_LAYOUT_WALL_MARGIN_METRES = 0.6;
 
 const MARGIN_FALLBACK_STEP_METRES = 0.1;
@@ -252,7 +232,7 @@ export function generateGridPlacementPoints(
 
   if (placed.length < requestedCount) {
     warnings.push(
-      `Could only place ${placed.length} of ${requestedCount} luminaires inside the room. Try adjusting the room shape or wall margin.`,
+      `${placed.length} of ${requestedCount} luminaires could be placed automatically. Adjust the layout manually or reduce the wall margin.`,
     );
   }
 

@@ -108,10 +108,7 @@ export type { AxisAlignedBounds } from "./point-in-polygon.js";
 
 export {
   GRID_PLACEMENT_CATEGORIES,
-  MANUAL_ONLY_PLACEMENT_CATEGORIES,
   DEFAULT_LAYOUT_WALL_MARGIN_METRES,
-  supportsAutomaticGridPlacement,
-  isManualPlacementOnlyCategory,
   chooseGridDimensions,
   generateSymmetricGridPoints,
   selectGridPointsForQuantity,
@@ -124,6 +121,17 @@ export type {
   GenerateGridPlacementInput,
   GenerateGridPlacementResult,
 } from "./grid-placement.js";
+
+export {
+  generateCategoryPlacementPoints,
+  generateWallLuminairePlacementPoints,
+  buildLayoutProposalPreviewText,
+  buildLayoutGenerationResultText,
+  isManualPlacementOnlyCategory,
+  supportsAutomaticGridPlacement,
+  MANUAL_ONLY_PLACEMENT_CATEGORIES,
+} from "./category-placement.js";
+export type { PlacementPoint } from "./category-placement.js";
 
 export {
   validateLayoutGeneration,

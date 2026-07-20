@@ -406,10 +406,6 @@ export function RoomPropertiesPanel() {
           </p>
         ) : null}
 
-        {layoutValidation.manualPlacementOnly ? (
-          <p className="text-xs text-amber-400">Manual placement only for this product category.</p>
-        ) : null}
-
         {!layoutValidation.canGenerate && layoutValidation.reason ? (
           <p className="text-xs text-[var(--muted)]">{layoutValidation.reason}</p>
         ) : null}

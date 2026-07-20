@@ -71,7 +71,7 @@ describe("editor properties tabs", () => {
 
   it("shows layout controls only in Lighting layout tab", () => {
     render(<LightingLayoutTab />);
-    expect(screen.getByText(/generate lighting layout/i)).toBeTruthy();
+    expect(screen.getByText(/generate proposal with selected product/i)).toBeTruthy();
     expect(screen.queryByLabelText(/room type/i)).toBeNull();
     expect(screen.queryByLabelText(/ceiling height/i)).toBeNull();
   });

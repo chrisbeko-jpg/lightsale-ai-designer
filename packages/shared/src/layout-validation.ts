@@ -1,8 +1,4 @@
 import type { LightingProduct } from "./product-catalog.js";
-import {
-  isManualPlacementOnlyCategory,
-  supportsAutomaticGridPlacement,
-} from "./grid-placement.js";
 import type { Room, ScaleCalibration } from "./schemas.js";
 import { getEffectiveTargetLux } from "./room-lighting.js";
 import { calculateIndicativeLuminaireEstimate } from "./luminaire-quantity.js";
@@ -19,7 +15,6 @@ export interface LayoutGenerationValidation {
   canGenerate: boolean;
   reason: string | null;
   calculatedQuantity: number | null;
-  manualPlacementOnly: boolean;
 }
 
 export function validateLayoutGeneration(
@@ -30,7 +25,6 @@ export function validateLayoutGeneration(
       canGenerate: false,
       reason: "Configure scale before generating a layout.",
       calculatedQuantity: null,
-      manualPlacementOnly: false,
     };
   }
 
@@ -39,7 +33,6 @@ export function validateLayoutGeneration(
       canGenerate: false,
       reason: "Room geometry is not valid.",
       calculatedQuantity: null,
-      manualPlacementOnly: false,
     };
   }
 
@@ -48,7 +41,6 @@ export function validateLayoutGeneration(
       canGenerate: false,
       reason: "Room area is not valid. Check scale and room polygon.",
       calculatedQuantity: null,
-      manualPlacementOnly: false,
     };
   }
 
@@ -58,7 +50,6 @@ export function validateLayoutGeneration(
       canGenerate: false,
       reason: "Target lux is not available for this room.",
       calculatedQuantity: null,
-      manualPlacementOnly: false,
     };
   }
 
@@ -67,25 +58,17 @@ export function validateLayoutGeneration(
       canGenerate: false,
       reason: "Select a compatible product first.",
       calculatedQuantity: null,
-      manualPlacementOnly: false,
     };
   }
 
-  if (isManualPlacementOnlyCategory(input.product.category)) {
+  if (
+    !Number.isFinite(input.product.luminousFluxLumens) ||
+    input.product.luminousFluxLumens <= 0
+  ) {
     return {
       canGenerate: false,
-      reason: "Manual placement only for this product category.",
+      reason: "Selected product has no usable luminous flux.",
       calculatedQuantity: null,
-      manualPlacementOnly: true,
-    };
-  }
-
-  if (!supportsAutomaticGridPlacement(input.product.category)) {
-    return {
-      canGenerate: false,
-      reason: "Automatic grid placement is not supported for this product.",
-      calculatedQuantity: null,
-      manualPlacementOnly: false,
     };
   }
 
@@ -100,7 +83,6 @@ export function validateLayoutGeneration(
       canGenerate: false,
       reason: "Calculated luminaire quantity must be greater than zero.",
       calculatedQuantity: estimate.quantity,
-      manualPlacementOnly: false,
     };
   }
 
@@ -108,7 +90,6 @@ export function validateLayoutGeneration(
     canGenerate: true,
     reason: null,
     calculatedQuantity: estimate.quantity,
-    manualPlacementOnly: false,
   };
 }
 

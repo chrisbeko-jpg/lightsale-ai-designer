@@ -9,6 +9,8 @@ import type { OutputSettingsPatch } from "@lightsale/shared";
 
 import {
 
+  buildLayoutGenerationResultText,
+
   defaultRoomPropertyFields,
 
   defaultManualLuminairePosition,
@@ -268,26 +270,34 @@ function runLayoutGeneration(
 
   );
 
-  if (existingForRoom.length > 0 && !replaceExisting) {
+  const hasOtherProductLuminaires = existingForRoom.some(
+    (item) => item.productId !== product.id,
+  );
+  const hasSameProductOnly =
+    existingForRoom.length > 0 &&
+    existingForRoom.every((item) => item.productId === product.id);
 
-    return {
-
-      warnings: ["This room already has luminaires. Use Regenerate layout."],
-      nextLuminaires: null,
-
-    };
-
+  if (!replaceExisting) {
+    if (hasSameProductOnly) {
+      return {
+        warnings: [
+          "This room already has luminaires for the selected product. Use Replace room layout with selected product.",
+        ],
+        nextLuminaires: null,
+      };
+    }
   }
 
 
 
-  const { luminaires: generated, warnings } = generateLuminairesForRoom({
+  const { luminaires: generated, warnings, placedCount, requestedCount } =
+    generateLuminairesForRoom({
 
     room,
 
     scale: state.scale,
 
-    productId: product.id,
+    product,
 
     quantity: validation.calculatedQuantity,
 
@@ -297,14 +307,26 @@ function runLayoutGeneration(
 
   });
 
+  const resultMessages = [
+    ...warnings,
+    buildLayoutGenerationResultText({
+      placedCount,
+      requestedCount,
+      productName: product.name,
+    }),
+  ];
 
+
+
+  const baseLuminaires = replaceExisting
+    ? state.luminaires.filter((item) => item.roomId !== roomId)
+    : hasOtherProductLuminaires
+      ? state.luminaires
+      : state.luminaires.filter((item) => item.roomId !== roomId);
 
   return {
-    warnings,
-    nextLuminaires: [
-      ...state.luminaires.filter((item) => item.roomId !== roomId),
-      ...generated,
-    ],
+    warnings: resultMessages,
+    nextLuminaires: [...baseLuminaires, ...generated],
   };
 }
 
