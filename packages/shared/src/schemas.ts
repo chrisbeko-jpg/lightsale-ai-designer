@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { DEMO_PRODUCT_IDS, getProductById } from "./product-catalog.js";
 import { migrateLegacyRoomFields } from "./room-migration.js";
+import { OutputSettingsSchema } from "./output-settings.js";
 
 export const PointSchema = z.object({
   x: z.number(),
@@ -236,10 +237,19 @@ export const ProjectDocumentSchema = z.object({
   scale: ScaleCalibrationSchema.nullable(),
   rooms: z.array(RoomSchema),
   luminaires: z.array(LuminaireSchema).default([]),
+  outputSettings: OutputSettingsSchema.optional(),
   viewport: ViewportStateSchema.optional(),
 });
 
 export type ProjectDocument = z.infer<typeof ProjectDocumentSchema>;
+
+export type { OutputSettings } from "./output-settings.js";
+export {
+  OutputSettingsSchema,
+  DEFAULT_OUTPUT_SETTINGS,
+  normalizeOutputSettings,
+} from "./output-settings.js";
+export type { OutputSettingsPatch } from "./output-settings.js";
 
 export const ProjectSchema = z.object({
   id: z.string().uuid(),
@@ -262,6 +272,7 @@ export const UpdateProjectDocumentInputSchema = z.object({
   scale: ScaleCalibrationSchema.nullable(),
   rooms: z.array(RoomSchema),
   luminaires: z.array(LuminaireSchema).default([]),
+  outputSettings: OutputSettingsSchema.optional(),
   viewport: ViewportStateSchema.optional(),
 });
 

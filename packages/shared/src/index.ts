@@ -150,6 +150,24 @@ export {
 export { normalizeLoadedProjectDocument } from "./document-normalization.js";
 
 export {
+  OutputSettingsSchema,
+  DEFAULT_OUTPUT_SETTINGS,
+  normalizeOutputSettings,
+} from "./output-settings.js";
+export type { OutputSettings, OutputSettingsPatch } from "./output-settings.js";
+
+export {
+  assignLuminairePositionNumbers,
+  buildArticleList,
+  formatPositionNumbers,
+} from "./article-list.js";
+export type {
+  ArticleListRow,
+  ArticleListResult,
+  LuminairePositionLabel,
+} from "./article-list.js";
+
+export {
   LuminaireSchema,
   PlacementSourceSchema,
   PLACEMENT_SOURCES,

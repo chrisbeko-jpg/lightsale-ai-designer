@@ -49,6 +49,10 @@ export function roomTypeOptions(): { value: RoomType; label: string }[] {
   }));
 }
 
+export function roomTypeLabel(value: RoomType): string {
+  return ROOM_TYPE_LABELS[value];
+}
+
 export function ceilingTypeOptions(): { value: CeilingType; label: string }[] {
   return CEILING_TYPES.map((value) => ({
     value,

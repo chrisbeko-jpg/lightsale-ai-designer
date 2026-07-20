@@ -5,6 +5,7 @@
 import { create } from "zustand";
 
 import type { Luminaire, Point, Project, Room, RoomPropertyPatch, ScaleCalibration } from "@lightsale/shared";
+import type { OutputSettingsPatch } from "@lightsale/shared";
 
 import {
 
@@ -64,6 +65,8 @@ import {
 
   type EditorDocumentState,
 
+  type EditorPropertiesTab,
+
   type EditorState,
 
   type EditorTool,
@@ -77,6 +80,10 @@ interface EditorActions {
   loadProject: (project: Project, floorPlanUrl: string | null) => void;
 
   setTool: (tool: EditorTool) => void;
+
+  setPropertiesTab: (tab: EditorPropertiesTab) => void;
+
+  updateOutputSettings: (patch: OutputSettingsPatch) => void;
 
   selectRoom: (roomId: string | null) => void;
 
@@ -113,6 +120,13 @@ interface EditorActions {
   regenerateLightingLayout: (roomId: string) => string[];
 
   moveLuminaire: (luminaireId: string, position: Point) => void;
+
+  updateLuminaire: (
+    luminaireId: string,
+    patch: Partial<
+      Pick<Luminaire, "x" | "y" | "rotationDegrees" | "productId">
+    >,
+  ) => void;
 
   deleteSelectedLuminaire: () => void;
 
@@ -162,7 +176,12 @@ type EditorStore = EditorState & {
 
 function currentDocument(state: EditorState): EditorDocumentState {
 
-  return { scale: state.scale, rooms: state.rooms, luminaires: state.luminaires };
+  return {
+    scale: state.scale,
+    rooms: state.rooms,
+    luminaires: state.luminaires,
+    outputSettings: state.outputSettings,
+  };
 
 }
 
@@ -301,7 +320,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
   loadProject: (project, floorPlanUrl) => {
 
-    const doc = documentFromProject(project.document);
+    const doc = documentFromProject(project.document, project.name);
 
     set({
 
@@ -309,13 +328,15 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
       projectId: project.id,
 
-      projectName: project.name,
+      projectName: doc.outputSettings.projectName ?? project.name,
 
       scale: doc.scale,
 
       rooms: doc.rooms,
 
       luminaires: doc.luminaires,
+
+      outputSettings: doc.outputSettings,
 
       viewport: project.document.viewport ?? initialEditorState.viewport,
 
@@ -350,6 +371,22 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       drawDraftVertices: tool === "draw-room" ? get().drawDraftVertices : [],
 
     }),
+
+
+
+  setPropertiesTab: (tab) => set({ propertiesTab: tab }),
+
+
+
+  updateOutputSettings: (patch) => {
+    get().mutateDocument((doc) => ({
+      ...doc,
+      outputSettings: { ...doc.outputSettings, ...patch },
+    }));
+    if (patch.projectName !== undefined) {
+      set({ projectName: patch.projectName ?? get().projectName });
+    }
+  },
 
 
 
@@ -427,6 +464,8 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
         rooms: after.rooms,
 
         luminaires: after.luminaires,
+
+        outputSettings: after.outputSettings,
 
         history,
 
@@ -754,6 +793,23 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
       }),
 
+    })),
+
+
+
+  updateLuminaire: (luminaireId, patch) =>
+    get().mutateDocument((doc) => ({
+      ...doc,
+      luminaires: doc.luminaires.map((item) => {
+        if (item.id !== luminaireId) {
+          return item;
+        }
+        const next = { ...item, ...patch };
+        if (patch.x !== undefined || patch.y !== undefined) {
+          next.placementSource = "manual";
+        }
+        return next;
+      }),
     })),
 
 

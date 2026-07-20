@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   floorPlanFileUrl,
@@ -10,10 +10,7 @@ import {
 import { useEditorStore } from "@/lib/editor/store";
 import { EditorToolbar } from "./EditorToolbar";
 import { FloorPlanCanvas } from "./FloorPlanCanvasClient";
-import { FloorPlanUpload } from "./FloorPlanUpload";
-import { RoomListPanel } from "./RoomListPanel";
-import { RoomPropertiesPanel } from "./RoomPropertiesPanel";
-import { ScaleCalibrationPanel } from "./ScaleCalibrationPanel";
+import { EditorPropertiesPanel } from "./properties/EditorPropertiesPanel";
 
 interface ProjectEditorProps {
   projectId: string;
@@ -31,6 +28,7 @@ export function ProjectEditor({ projectId }: ProjectEditorProps) {
 
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const canvasHostRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
 
   useEffect(() => {
@@ -58,17 +56,25 @@ export function ProjectEditor({ projectId }: ProjectEditorProps) {
   }, [projectId, loadProject]);
 
   useEffect(() => {
+    const host = canvasHostRef.current;
+    if (!host) {
+      return;
+    }
     function updateSize() {
-      const sidebarWidth = 320;
-      const padding = 0;
+      const element = canvasHostRef.current;
+      if (!element) {
+        return;
+      }
+      const rect = element.getBoundingClientRect();
       setCanvasSize({
-        width: Math.max(400, window.innerWidth - sidebarWidth - padding),
-        height: Math.max(400, window.innerHeight - 56),
+        width: Math.max(400, Math.floor(rect.width)),
+        height: Math.max(400, Math.floor(rect.height)),
       });
     }
     updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(host);
+    return () => observer.disconnect();
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -119,8 +125,8 @@ export function ProjectEditor({ projectId }: ProjectEditorProps) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--panel)] px-4 py-3">
+    <div className="flex h-screen max-h-screen flex-col overflow-hidden">
+      <header className="flex shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--panel)] px-4 py-3">
         <div className="flex items-center gap-4">
           <Link href="/" className="text-sm text-[var(--muted)] hover:text-white">
             ← Projects
@@ -142,29 +148,15 @@ export function ProjectEditor({ projectId }: ProjectEditorProps) {
 
       <EditorToolbar />
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <EditorPropertiesPanel
+          projectId={projectId}
+          saveError={saveError}
+          floorPlanHint={!floorPlanUrl}
+        />
+        <div ref={canvasHostRef} className="min-w-0 flex-1 overflow-hidden">
           <FloorPlanCanvas width={canvasSize.width} height={canvasSize.height} />
         </div>
-
-        <aside className="w-80 shrink-0 space-y-4 overflow-y-auto border-l border-[var(--border)] bg-[var(--panel)] p-4">
-          <FloorPlanUpload projectId={projectId} />
-          <ScaleCalibrationPanel />
-          <RoomPropertiesPanel />
-          <div>
-            <h3 className="mb-2 text-sm font-medium">Rooms</h3>
-            <RoomListPanel />
-          </div>
-          {saveError ? (
-            <p className="text-xs text-red-400">{saveError}</p>
-          ) : null}
-          {!floorPlanUrl ? (
-            <p className="text-xs text-[var(--muted)]">
-              Upload a floor plan to begin. Scroll to zoom. Use Pan tool or
-              Shift+drag to pan.
-            </p>
-          ) : null}
-        </aside>
       </div>
     </div>
   );

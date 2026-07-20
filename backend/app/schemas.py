@@ -168,10 +168,28 @@ class FloorPlanAssetModel(BaseModel):
     storagePath: str
 
 
+class OutputSettingsModel(BaseModel):
+    projectName: str | None = Field(default=None, max_length=200)
+    customerName: str = Field(default="", max_length=200)
+    projectReference: str = Field(default="", max_length=200)
+    projectAddress: str = Field(default="", max_length=500)
+    designerName: str = Field(default="", max_length=200)
+    outputDate: str = Field(default="", max_length=50)
+    notes: str = Field(default="", max_length=2000)
+    showFloorPlanBackground: bool = True
+    showRoomOutlines: bool = True
+    showRoomNames: bool = True
+    showLuminaireSymbols: bool = True
+    showLuminaireNumbers: bool = False
+    showScale: bool = True
+    showLegend: bool = True
+
+
 class ProjectDocumentModel(BaseModel):
     scale: ScaleCalibrationModel | None = None
     rooms: list[RoomModel] = Field(default_factory=list)
     luminaires: list[LuminaireModel] = Field(default_factory=list)
+    outputSettings: OutputSettingsModel | None = None
     viewport: ViewportStateModel | None = None
 
 
@@ -192,6 +210,7 @@ class UpdateProjectDocumentRequest(BaseModel):
     scale: ScaleCalibrationModel | None = None
     rooms: list[RoomModel] = Field(default_factory=list)
     luminaires: list[LuminaireModel] = Field(default_factory=list)
+    outputSettings: OutputSettingsModel | None = None
     viewport: ViewportStateModel | None = None
 
 

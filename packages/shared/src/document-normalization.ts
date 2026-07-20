@@ -4,19 +4,30 @@ import {
   ScaleCalibrationSchema,
   ViewportStateSchema,
   type Luminaire,
+  type OutputSettings,
   type Room,
   type ScaleCalibration,
   type ViewportState,
 } from "./schemas.js";
+import { normalizeOutputSettings } from "./output-settings.js";
 
-export function normalizeLoadedProjectDocument(raw: unknown): {
+export function normalizeLoadedProjectDocument(
+  raw: unknown,
+  fallbackProjectName?: string,
+): {
   scale: ScaleCalibration | null;
   rooms: Room[];
   luminaires: Luminaire[];
+  outputSettings: OutputSettings;
   viewport?: ViewportState;
 } {
   if (typeof raw !== "object" || raw === null) {
-    return { scale: null, rooms: [], luminaires: [] };
+    return {
+      scale: null,
+      rooms: [],
+      luminaires: [],
+      outputSettings: normalizeOutputSettings(null, fallbackProjectName),
+    };
   }
 
   const record = raw as Record<string, unknown>;
@@ -33,10 +44,15 @@ export function normalizeLoadedProjectDocument(raw: unknown): {
 
   const luminaires = normalizeLuminaires(record.luminaires);
 
+  const outputSettings = normalizeOutputSettings(
+    record.outputSettings,
+    fallbackProjectName,
+  );
+
   let viewport: ViewportState | undefined;
   if (record.viewport !== undefined && record.viewport !== null) {
     viewport = ViewportStateSchema.parse(record.viewport);
   }
 
-  return { scale, rooms, luminaires, viewport };
+  return { scale, rooms, luminaires, outputSettings, viewport };
 }
