@@ -5,11 +5,12 @@ import { Circle, Group, Line, RegularPolygon, Rect, Text } from "react-konva";
 import type { Luminaire, Room } from "@lightsale/shared";
 import {
   assignLuminairePositionNumbers,
-  calculateLuminairePlanFootprintPx,
-  getProductById,
   getProductDisplayColor,
   hitRadiusPlanPx,
   isPointInPolygon,
+  LUMINAIRE_SYMBOL_STROKE_PLAN_PX,
+  luminaireNumberLabelOffsetPlanPx,
+  resolveLuminaireSymbolMetrics,
   withAlpha,
 } from "@lightsale/shared";
 import { useEditorStore } from "@/lib/editor/store";
@@ -35,18 +36,22 @@ export function LuminaireSymbol({
   const scale = useEditorStore((s) => s.scale);
   const editorMode = useEditorStore((s) => s.editorMode);
 
-  const product = getProductById(luminaire.productId);
-  const category = product?.category ?? "downlight";
+  const metrics = resolveLuminaireSymbolMetrics(luminaire, scale);
+  const { category, footprint, isPanel } = metrics;
   const productColor = getProductDisplayColor(luminaire.productId);
-  const footprint = calculateLuminairePlanFootprintPx(product?.dimensions, scale);
+
   const fallbackRadius = 7 / zoom;
   const modelRadius =
-    footprint?.shape === "circle"
+    footprint.shape === "circle"
       ? footprint.radiusPx
-      : Math.max(footprint?.halfWidthPx ?? fallbackRadius, footprint?.halfHeightPx ?? fallbackRadius);
+      : Math.max(footprint.halfWidthPx, footprint.halfHeightPx);
   const hitRadius = hitRadiusPlanPx(footprint, zoom, fallbackRadius);
-  const minVisible = 2 / zoom;
-  const visibleRadius = Math.max(modelRadius, minVisible);
+
+  const hw = footprint.halfWidthPx;
+  const hh = footprint.halfHeightPx;
+  const circleRadius = footprint.radiusPx;
+  const strokeWidth = LUMINAIRE_SYMBOL_STROKE_PLAN_PX / zoom;
+  const labelOffsetY = luminaireNumberLabelOffsetPlanPx(footprint) / zoom;
 
   const outsideRoom =
     room === undefined ||
@@ -82,13 +87,6 @@ export function LuminaireSymbol({
     moveLuminaire(luminaire.id, { x: node.x(), y: node.y() });
   };
 
-  const isPanel =
-    category === "led_panel" ||
-    category === "panel" ||
-    footprint?.shape === "rectangle";
-  const hw = Math.max(footprint?.halfWidthPx ?? visibleRadius, minVisible);
-  const hh = Math.max(footprint?.halfHeightPx ?? visibleRadius * 0.6, minVisible);
-
   return (
     <Group
       x={luminaire.x}
@@ -115,63 +113,63 @@ export function LuminaireSymbol({
           height={hh * 2}
           fill={fill}
           stroke={stroke}
-          strokeWidth={2 / zoom}
+          strokeWidth={strokeWidth}
         />
       ) : category === "tracklighting" || category === "track_spot" ? (
         <Group>
           <Circle
-            radius={visibleRadius}
+            radius={circleRadius}
             fill={fill}
             stroke={stroke}
-            strokeWidth={2 / zoom}
+            strokeWidth={strokeWidth}
           />
           <Line
-            points={[0, 0, visibleRadius * 0.85, 0]}
+            points={[0, 0, circleRadius * 0.85, 0]}
             stroke={stroke}
-            strokeWidth={2 / zoom}
+            strokeWidth={strokeWidth}
           />
         </Group>
       ) : category === "recessed_spot" ? (
         <Group>
           <Circle
-            radius={visibleRadius}
+            radius={circleRadius}
             fill={fill}
             stroke={stroke}
-            strokeWidth={2 / zoom}
+            strokeWidth={strokeWidth}
           />
           <Circle
-            radius={visibleRadius * 0.55}
+            radius={circleRadius * 0.55}
             stroke={stroke}
-            strokeWidth={1.5 / zoom}
+            strokeWidth={strokeWidth * 0.75}
           />
         </Group>
       ) : category === "surface_spot" ? (
         <RegularPolygon
           sides={4}
-          radius={visibleRadius}
+          radius={circleRadius}
           rotation={45}
           fill={fill}
           stroke={stroke}
-          strokeWidth={2 / zoom}
+          strokeWidth={strokeWidth}
         />
       ) : category === "linear" ? (
         <Line
-          points={[-visibleRadius * 1.1, 0, visibleRadius * 1.1, 0]}
+          points={[-circleRadius * 1.1, 0, circleRadius * 1.1, 0]}
           stroke={productColor}
-          strokeWidth={4 / zoom}
+          strokeWidth={strokeWidth * 2}
           lineCap="round"
         />
       ) : (
         <Circle
-          radius={visibleRadius}
+          radius={circleRadius}
           fill={fill}
           stroke={stroke}
-          strokeWidth={2 / zoom}
+          strokeWidth={strokeWidth}
         />
       )}
       {positionNumber !== undefined ? (
         <Text
-          y={visibleRadius + 6 / zoom}
+          y={labelOffsetY}
           text={String(positionNumber)}
           fontSize={10 / zoom}
           fill="#e2e8f0"
@@ -182,7 +180,7 @@ export function LuminaireSymbol({
       ) : null}
       {outsideRoom ? (
         <Circle
-          radius={Math.max(visibleRadius, hitRadius * 0.85)}
+          radius={Math.max(modelRadius, hitRadius * 0.85)}
           stroke="#d05b5b"
           strokeWidth={1.5 / zoom}
           dash={[4 / zoom, 3 / zoom]}

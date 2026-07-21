@@ -284,7 +284,17 @@ export {
 } from "./product-dimensions.js";
 export type { LuminairePlanFootprintPx, ProductDimensions } from "./product-dimensions.js";
 
-export { drawLuminaireSymbolOnCanvas } from "./luminaire-symbol-draw.js";
+export {
+  drawLuminaireSymbolOnCanvas,
+  renderLuminaireSymbol,
+  resolveLuminaireSymbolMetrics,
+  resolveLuminaireSymbolFootprint,
+  scaleLuminairePlanFootprint,
+  luminaireNumberLabelOffsetPlanPx,
+  LUMINAIRE_SYMBOL_STROKE_PLAN_PX,
+  LUMINAIRE_NUMBER_LABEL_GAP_PLAN_PX,
+} from "./luminaire-symbol-draw.js";
+export type { LuminaireSymbolMetrics } from "./luminaire-symbol-draw.js";
 
 export {
   PNG_DATA_URL_PREFIX,
