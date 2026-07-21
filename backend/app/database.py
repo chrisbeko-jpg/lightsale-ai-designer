@@ -21,14 +21,12 @@ async def init_db() -> None:
         if settings.enable_postgis:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
         await conn.run_sync(Base.metadata.create_all)
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE projects ADD COLUMN IF NOT EXISTS owner_id VARCHAR(128) DEFAULT 'local';
-                ALTER TABLE projects ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
-                ALTER TABLE projects ADD COLUMN IF NOT EXISTS deleted_by VARCHAR(128);
-                ALTER TABLE projects ADD COLUMN IF NOT EXISTS deletion_scheduled_at TIMESTAMPTZ;
-                UPDATE projects SET owner_id = 'local' WHERE owner_id IS NULL;
-                """
-            )
-        )
+        migrations = [
+            "ALTER TABLE projects ADD COLUMN IF NOT EXISTS owner_id VARCHAR(128)",
+            "ALTER TABLE projects ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ",
+            "ALTER TABLE projects ADD COLUMN IF NOT EXISTS deleted_by VARCHAR(128)",
+            "ALTER TABLE projects ADD COLUMN IF NOT EXISTS deletion_scheduled_at TIMESTAMPTZ",
+            "UPDATE projects SET owner_id = 'local' WHERE owner_id IS NULL",
+        ]
+        for statement in migrations:
+            await conn.execute(text(statement))
