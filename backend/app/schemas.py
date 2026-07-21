@@ -171,7 +171,7 @@ class FloorPlanAssetModel(BaseModel):
 
 
 class OutputSettingsModel(BaseModel):
-    projectName: str | None = Field(default=None, max_length=200)
+    projectName: str = Field(default="", max_length=200)
     customerName: str = Field(default="", max_length=200)
     projectReference: str = Field(default="", max_length=200)
     projectAddress: str = Field(default="", max_length=500)

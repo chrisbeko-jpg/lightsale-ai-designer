@@ -248,6 +248,7 @@ export {
   OutputSettingsSchema,
   NormalizedOutputSettingsSchema,
   DEFAULT_OUTPUT_SETTINGS,
+  OUTPUT_SETTINGS_TEXT_FIELDS,
   normalizeOutputSettings,
 } from "./output-settings.js";
 export type { OutputSettingsPatch } from "./output-settings.js";

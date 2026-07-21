@@ -11,13 +11,32 @@ ALLOWED_MIME_TYPES = {
     "application/pdf": ".pdf",
 }
 
+EXTENSION_MIME = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".pdf": "application/pdf",
+}
+
+
+def resolve_upload_mime_type(upload: UploadFile) -> str:
+    content_type = (upload.content_type or "").split(";", 1)[0].strip().lower()
+    if content_type in ALLOWED_MIME_TYPES:
+        return content_type
+    filename = (upload.filename or "").lower()
+    for ext, mime in EXTENSION_MIME.items():
+        if filename.endswith(ext):
+            return mime
+    return content_type
+
 
 async def save_floor_plan_upload(
     upload: UploadFile,
     upload_dir: Path,
     project_id: uuid.UUID,
-) -> tuple[str, str, float, float]:
-    if upload.content_type not in ALLOWED_MIME_TYPES:
+) -> tuple[str, str, float, float, str]:
+    mime_type = resolve_upload_mime_type(upload)
+    if mime_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(
             status_code=400,
             detail="Only PDF, PNG, and JPG files are supported",
@@ -27,20 +46,18 @@ async def save_floor_plan_upload(
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
 
-    extension = ALLOWED_MIME_TYPES[upload.content_type]
+    extension = ALLOWED_MIME_TYPES[mime_type]
     file_id = uuid.uuid4()
     filename = f"{project_id}_{file_id}{extension}"
     storage_path = upload_dir / filename
     upload_dir.mkdir(parents=True, exist_ok=True)
     storage_path.write_bytes(content)
 
-    width_px, height_px = await _extract_dimensions(
-        content, upload.content_type or "application/octet-stream"
-    )
+    width_px, height_px = await _extract_dimensions(content, mime_type)
 
     return (
         upload.filename or f"floor-plan{extension}",
-        upload.content_type or "application/octet-stream",
+        mime_type,
         width_px,
         height_px,
         str(storage_path),

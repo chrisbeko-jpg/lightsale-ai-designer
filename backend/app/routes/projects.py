@@ -1,3 +1,4 @@
+import logging
 import shutil
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -8,6 +9,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.document_normalize import normalize_project_document
 from app.database import get_session
 from app.floor_plan_upload import save_floor_plan_upload
@@ -25,6 +27,7 @@ from app.schemas import (
 )
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
+logger = logging.getLogger(__name__)
 
 TRASH_RETENTION_DAYS = 30
 
@@ -46,7 +49,10 @@ def _document_counts(document: dict) -> tuple[int, int, str]:
 def _to_project_model(
     row: ProjectRow, floor_plan: FloorPlanRow | None
 ) -> ProjectModel:
-    normalized_document = normalize_project_document(row.document)
+    normalized_document = normalize_project_document(
+        row.document,
+        project_name=row.name,
+    )
     floor_plan_model = None
     if floor_plan is not None:
         floor_plan_model = FloorPlanAssetModel(
@@ -179,7 +185,9 @@ async def create_project(
     session: AsyncSession = Depends(get_session),
     owner_id: str = Depends(_owner_id),
 ) -> ProjectModel:
-    row = ProjectRow(name=body.name, document=default_document(), owner_id=owner_id)
+    doc = default_document()
+    doc["outputSettings"]["projectName"] = body.name
+    row = ProjectRow(name=body.name, document=doc, owner_id=owner_id)
     session.add(row)
     await session.commit()
     await session.refresh(row)
@@ -226,7 +234,10 @@ async def duplicate_project(
     floor_plan = await _get_floor_plan(project_id, session)
     copy = ProjectRow(
         name=f"{row.name} (copy)",
-        document=normalize_project_document(dict(row.document)),
+        document=normalize_project_document(
+            dict(row.document),
+            project_name=f"{row.name} (copy)",
+        ),
         owner_id=owner_id,
     )
     session.add(copy)
@@ -314,7 +325,10 @@ async def update_project_document(
 ) -> ProjectModel:
     row = await _get_project_row(project_id, session)
     _assert_owner(row, owner_id)
-    row.document = normalize_project_document(body.model_dump(mode="json"))
+    row.document = normalize_project_document(
+        body.model_dump(mode="json"),
+        project_name=row.name,
+    )
     row.updated_at = datetime.now(timezone.utc)
     await session.commit()
     await session.refresh(row)
@@ -333,9 +347,22 @@ async def upload_floor_plan(
     _assert_owner(row, owner_id)
     upload_dir = Path(settings.upload_dir)
 
-    file_name, mime_type, width_px, height_px, storage_path = (
-        await save_floor_plan_upload(file, upload_dir, project_id)
-    )
+    try:
+        file_name, mime_type, width_px, height_px, storage_path = (
+            await save_floor_plan_upload(file, upload_dir, project_id)
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception(
+            "Floor plan upload failed project_id=%s upload_dir=%s",
+            project_id,
+            upload_dir,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Floor plan upload failed on the server",
+        ) from exc
 
     existing = await _get_floor_plan(project_id, session)
     if existing is not None:

@@ -18,7 +18,8 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://lightsale:lightsale@localhost:5432/lightsale"
     )
     upload_dir: str = "uploads"
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = "http://localhost:3000,https://web-topaz-mu-36.vercel.app"
+    cors_origin_regex: str = r"https://.*\.vercel\.app"
     enable_postgis: bool = False
 
     @field_validator("database_url", mode="before")
