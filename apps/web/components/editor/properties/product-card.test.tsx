@@ -43,4 +43,18 @@ describe("ProductCard", () => {
       screen.getByLabelText(/Drag WL Bari Small 6W 930 to floor plan/i),
     ).toBeTruthy();
   });
+
+  it("shows placement mode active badge when placementActive", () => {
+    render(
+      <ProductCard
+        product={product}
+        roomId="room-1"
+        selected
+        placementActive
+        onSelect={() => {}}
+      />,
+    );
+    expect(screen.getByText("Placement mode active")).toBeTruthy();
+    expect(screen.getByText("Active")).toBeTruthy();
+  });
 });

@@ -5,7 +5,6 @@ import {
   formatBeamAngle,
   formatColourTemperature,
   formatProductDimensionsLabel,
-  getProductDisplayColor,
   productCategoryLabel,
 } from "@lightsale/shared";
 import { useEditorStore } from "@/lib/editor/store";
@@ -15,6 +14,7 @@ interface ProductCardProps {
   product: LightingProduct;
   roomId: string;
   selected: boolean;
+  placementActive?: boolean;
   onSelect: () => void;
 }
 
@@ -22,23 +22,35 @@ export function ProductCard({
   product,
   roomId,
   selected,
+  placementActive = false,
   onSelect,
 }: ProductCardProps) {
   const colourTemp = formatColourTemperature(product.colourTemperatureKelvin);
   const beam = formatBeamAngle(product.beamAngleDegrees);
   const dimensions = formatProductDimensionsLabel(product.dimensions);
-  const accent = getProductDisplayColor(product.id);
   const beginProductDrag = useEditorStore((s) => s.beginProductDrag);
 
   return (
     <div
       className={`w-full rounded-lg border p-2 text-left transition-colors select-none ${
-        selected
-          ? "border-[var(--accent)] bg-[var(--accent)]/10"
-          : "border-[var(--border)] bg-[var(--background)] hover:border-[var(--muted)]"
+        placementActive
+          ? "border-[var(--accent)] bg-[var(--accent)]/15"
+          : selected
+            ? "border-[var(--border)] bg-[var(--background)]"
+            : "border-[var(--border)] bg-[var(--background)] hover:border-[var(--muted)]"
       }`}
-      style={selected ? { boxShadow: `inset 0 0 0 1px ${accent}` } : undefined}
+      style={
+        placementActive ? { boxShadow: "inset 0 0 0 2px var(--accent)" } : undefined
+      }
     >
+      {placementActive ? (
+        <p className="mb-1 flex items-center gap-1.5 text-[10px] font-medium text-[var(--accent)]">
+          <span className="rounded bg-[var(--accent)] px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-[#2E3135]">
+            Active
+          </span>
+          Placement mode active
+        </p>
+      ) : null}
       <div className="flex gap-2">
         <ProductThumbnail product={product} size={64} />
         <button
@@ -75,7 +87,9 @@ export function ProductCard({
             }
             event.preventDefault();
             event.stopPropagation();
-            onSelect();
+            if (!selected) {
+              onSelect();
+            }
             beginProductDrag(
               product.id,
               roomId,

@@ -19,7 +19,7 @@ interface FloorPlanCanvasProps {
 
 export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
   const viewport = useEditorStore((s) => s.viewport);
-  const activeTool = useEditorStore((s) => s.activeTool);
+  const editorMode = useEditorStore((s) => s.editorMode);
   const rooms = useEditorStore((s) => s.rooms);
   const luminaires = useEditorStore((s) => s.luminaires);
   const selectedRoomId = useEditorStore((s) => s.selectedRoomId);
@@ -48,6 +48,7 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        useEditorStore.getState().stopPlacing();
         useEditorStore.getState().cancelDrawing();
         useEditorStore.getState().clearScaleDraft();
         useEditorStore.getState().selectLuminaire(null);
@@ -102,7 +103,7 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
     }
     const canvasPoint = getCanvasPoint(event);
 
-    if (activeTool === "pan" || event.evt.shiftKey) {
+    if (editorMode === "pan" || event.evt.shiftKey) {
       setIsPanning(true);
       const stage = event.target.getStage();
       const pointer = stage?.getPointerPosition();
@@ -110,20 +111,23 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
       return;
     }
 
-    if (activeTool === "scale") {
+    if (editorMode === "calibrate-scale") {
       addScalePoint(canvasPoint);
       return;
     }
 
-    if (activeTool === "draw-room") {
+    if (editorMode === "draw-room") {
       addDrawVertex(canvasPoint);
       return;
     }
 
-    if (activeTool === "select") {
+    if (editorMode === "place-luminaire") {
       if (tryPlaceLuminaireAtCanvasPoint(canvasPoint)) {
         return;
       }
+    }
+
+    if (editorMode === "select") {
       const stage = event.target.getStage();
       if (stage && event.target === stage) {
         selectRoom(null);
@@ -153,6 +157,13 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
 
   const draftLinePoints = drawDraftVertices.flatMap((v) => [v.x, v.y]);
 
+  const stageCursor =
+    editorMode === "place-luminaire"
+      ? "cursor-crosshair"
+      : editorMode === "pan"
+        ? "cursor-grab"
+        : "cursor-default";
+
   return (
     <Stage
       width={width}
@@ -165,7 +176,7 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
       onTouchStart={handlePointerDown}
       onTouchMove={handlePointerMove}
       onTouchEnd={handlePointerUp}
-      className={`cursor-crosshair bg-[#111820] ${productDrag?.overCanvas ? "ring-2 ring-inset ring-[var(--accent)]" : ""}`}
+      className={`${stageCursor} bg-[#111820] ${productDrag?.overCanvas ? "ring-2 ring-inset ring-[var(--accent)]" : ""}`}
     >
       <Layer
         x={viewport.offsetX}

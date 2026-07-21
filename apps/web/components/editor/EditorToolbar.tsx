@@ -1,6 +1,7 @@
 "use client";
 
 import type { EditorTool } from "@/lib/editor/types";
+import { editorModeToLegacyTool } from "@/lib/editor/types";
 import { canRedo, canUndo } from "@/lib/editor/history";
 import { useEditorStore } from "@/lib/editor/store";
 
@@ -12,7 +13,8 @@ const TOOLS: { id: EditorTool; label: string; hint: string }[] = [
 ];
 
 export function EditorToolbar() {
-  const activeTool = useEditorStore((s) => s.activeTool);
+  const editorMode = useEditorStore((s) => s.editorMode);
+  const activeTool = editorModeToLegacyTool(editorMode);
   const setTool = useEditorStore((s) => s.setTool);
   const history = useEditorStore((s) => s.history);
   const canUndoAction = canUndo(history);

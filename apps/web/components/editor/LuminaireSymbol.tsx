@@ -33,7 +33,7 @@ export function LuminaireSymbol({
 }: LuminaireSymbolProps) {
   const moveLuminaire = useEditorStore((s) => s.moveLuminaire);
   const scale = useEditorStore((s) => s.scale);
-  const activeTool = useEditorStore((s) => s.activeTool);
+  const editorMode = useEditorStore((s) => s.editorMode);
 
   const product = getProductById(luminaire.productId);
   const category = product?.category ?? "downlight";
@@ -61,7 +61,7 @@ export function LuminaireSymbol({
     ? "rgba(208, 91, 91, 0.35)"
     : withAlpha(productColor, 0.85);
 
-  const draggable = activeTool === "select" && !previewOnly;
+  const draggable = editorMode === "select" && !previewOnly;
 
   const handleSelect = (event: KonvaEventObject<MouseEvent | TouchEvent>) => {
     event.cancelBubble = true;

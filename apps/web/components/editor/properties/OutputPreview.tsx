@@ -136,7 +136,7 @@ export function OutputPreview({
 
         pixelHeight: floorPlanSize?.height ?? floorPlanImage?.naturalHeight ?? 0,
 
-      });
+      }, { heatmap: false });
 
       if (!cancelled) {
 

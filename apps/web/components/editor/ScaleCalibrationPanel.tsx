@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useEditorStore } from "@/lib/editor/store";
 
 export function ScaleCalibrationPanel() {
-  const activeTool = useEditorStore((s) => s.activeTool);
+  const editorMode = useEditorStore((s) => s.editorMode);
   const scaleDraftPoints = useEditorStore((s) => s.scaleDraftPoints);
   const applyScale = useEditorStore((s) => s.applyScale);
   const clearScaleDraft = useEditorStore((s) => s.clearScaleDraft);
@@ -12,7 +12,7 @@ export function ScaleCalibrationPanel() {
 
   const [distance, setDistance] = useState("");
 
-  if (activeTool !== "scale" && scale === null) {
+  if (editorMode !== "calibrate-scale" && scale === null) {
     return null;
   }
 
@@ -26,7 +26,7 @@ export function ScaleCalibrationPanel() {
           Scale set: {scale.realDistanceMetres} m between two points.
         </p>
       ) : null}
-      {activeTool === "scale" ? (
+      {editorMode === "calibrate-scale" ? (
         <>
           <p className="text-xs text-[var(--muted)]">
             Click two points on a known distance ({scaleDraftPoints.length}/2).

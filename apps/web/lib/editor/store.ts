@@ -86,6 +86,10 @@ import {
 
   type EditorTool,
 
+  type EditorMode,
+
+  editorToolToMode,
+
 } from "./types";
 
 
@@ -95,6 +99,10 @@ interface EditorActions {
   loadProject: (project: Project, floorPlanUrl: string | null) => void;
 
   setTool: (tool: EditorTool) => void;
+
+  stopPlacing: () => void;
+
+  toggleProductForPlacement: (roomId: string, productId: string) => void;
 
   setPropertiesTab: (tab: EditorPropertiesTab) => void;
 
@@ -419,17 +427,48 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
 
 
-  setTool: (tool) =>
-
+  setTool: (tool) => {
+    get().stopPlacing();
+    const mode = editorToolToMode(tool);
     set({
-
-      activeTool: tool,
-
+      editorMode: mode,
       scaleDraftPoints: tool === "scale" ? get().scaleDraftPoints : [],
-
       drawDraftVertices: tool === "draw-room" ? get().drawDraftVertices : [],
+    });
+  },
 
-    }),
+  stopPlacing: () => {
+    const state = get();
+    if (state.editorMode !== "place-luminaire") {
+      return;
+    }
+    const roomId = state.selectedRoomId;
+    if (roomId !== null) {
+      get().updateRoomProperties(roomId, { selectedProductId: null });
+    }
+    set({ editorMode: "select" });
+  },
+
+  toggleProductForPlacement: (roomId, productId) => {
+    const state = get();
+    const room = state.rooms.find((item) => item.id === roomId);
+    if (room === undefined) {
+      return;
+    }
+    if (
+      state.editorMode === "place-luminaire" &&
+      room.selectedProductId === productId
+    ) {
+      get().stopPlacing();
+      return;
+    }
+    get().updateRoomProperties(roomId, { selectedProductId: productId });
+    set({
+      editorMode: "place-luminaire",
+      selectedRoomId: roomId,
+      selectedLuminaireId: null,
+    });
+  },
 
 
 
@@ -540,7 +579,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
     set((state) => {
 
-      if (state.activeTool !== "scale") {
+      if (state.editorMode !== "calibrate-scale") {
 
         return state;
 
@@ -590,7 +629,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
     get().mutateDocument((doc) => ({ ...doc, scale: calibration }));
 
-    set({ scaleDraftPoints: [], activeTool: "select" });
+    set({ scaleDraftPoints: [], editorMode: "select" });
 
   },
 
@@ -600,7 +639,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
     set((state) => {
 
-      if (state.activeTool !== "draw-room") {
+      if (state.editorMode !== "draw-room") {
 
         return state;
 
@@ -652,7 +691,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
       selectedLuminaireId: null,
 
-      activeTool: "select",
+      editorMode: "select",
 
     });
 
@@ -1107,6 +1146,12 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
     const state = get();
 
+    if (state.editorMode !== "place-luminaire") {
+
+      return false;
+
+    }
+
     const room = findRoomContainingPoint(point, state.rooms);
 
     if (room === undefined || room.selectedProductId === null) {
@@ -1302,6 +1347,8 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
         selectedProductId: session.productId,
 
       });
+
+      set({ editorMode: "place-luminaire", selectedRoomId: session.roomId });
 
     }
 

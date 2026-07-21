@@ -12,7 +12,35 @@ import {
   normalizeLoadedProjectDocument,
 } from "@lightsale/shared";
 
+export type EditorMode =
+  | "select"
+  | "place-luminaire"
+  | "draw-room"
+  | "calibrate-scale"
+  | "pan";
+
+/** Toolbar tools (excludes transient placement mode). */
 export type EditorTool = "select" | "pan" | "scale" | "draw-room";
+
+export function editorModeToLegacyTool(mode: EditorMode): EditorTool {
+  if (mode === "place-luminaire") {
+    return "select";
+  }
+  if (mode === "calibrate-scale") {
+    return "scale";
+  }
+  if (mode === "draw-room") {
+    return "draw-room";
+  }
+  return mode;
+}
+
+export function editorToolToMode(tool: EditorTool): EditorMode {
+  if (tool === "scale") {
+    return "calibrate-scale";
+  }
+  return tool;
+}
 
 export type EditorPropertiesTab = "room" | "lighting" | "output";
 
@@ -48,7 +76,7 @@ export interface EditorState extends EditorDocumentState {
     offsetX: number;
     offsetY: number;
   };
-  activeTool: EditorTool;
+  editorMode: EditorMode;
   propertiesTab: EditorPropertiesTab;
   selectedRoomId: string | null;
   selectedLuminaireId: string | null;
@@ -74,7 +102,7 @@ export const initialEditorState: EditorState = {
   luminaires: [],
   outputSettings: normalizeLoadedProjectDocument({}).outputSettings,
   viewport: { ...DEFAULT_VIEWPORT },
-  activeTool: "select",
+  editorMode: "select",
   propertiesTab: "room",
   selectedRoomId: null,
   selectedLuminaireId: null,
