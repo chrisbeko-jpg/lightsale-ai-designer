@@ -3,6 +3,7 @@
 import type { KonvaEventObject } from "konva/lib/Node";
 import { Circle, Group, Line, Text } from "react-konva";
 import type { Room } from "@lightsale/shared";
+import { screenToCanvas } from "@lightsale/shared";
 import {
   formatAreaSquareMetres,
   polygonAreaSquareMetres,
@@ -59,7 +60,21 @@ export function RoomPolygon({ room, isSelected, onSelect }: RoomPolygonProps) {
     };
 
   return (
-    <Group onClick={onSelect} onTap={onSelect}>
+    <Group
+      onClick={(event) => {
+        event.cancelBubble = true;
+        const stage = event.target.getStage();
+        const pointer = stage?.getPointerPosition();
+        if (pointer) {
+          const point = screenToCanvas(pointer, viewport);
+          if (useEditorStore.getState().tryPlaceLuminaireAtCanvasPoint(point)) {
+            return;
+          }
+        }
+        onSelect();
+      }}
+      onTap={onSelect}
+    >
       <Line
         points={flatPoints}
         closed

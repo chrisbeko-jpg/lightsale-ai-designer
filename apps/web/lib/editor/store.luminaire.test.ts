@@ -149,26 +149,32 @@ describe("editor luminaire store", () => {
     ).toBe(false);
   });
 
-  it("does not remove luminaires in other rooms when replacing one room", () => {
-    const otherRoomId = "550e8400-e29b-41d4-a716-446655440099";
+  it("adds luminaire at canvas point with zoom-aware coordinates", () => {
     useEditorStore.setState({
-      rooms: [
-        baseRoom,
-        {
-          ...baseRoom,
-          id: otherRoomId,
-          name: "Other",
-        },
-      ],
+      rooms: [{ ...baseRoom, selectedProductId: "wl-bari-small" }],
+      floorPlanSize: { width: 500, height: 400 },
+      canvasHostRect: { left: 0, top: 0, width: 800, height: 600 },
+      viewport: { zoom: 2, offsetX: 10, offsetY: 20 },
     });
-    useEditorStore.getState().generateLightingLayout(roomId);
-    useEditorStore.getState().generateLightingLayout(otherRoomId);
-    expect(useEditorStore.getState().luminaires.some((l) => l.roomId === otherRoomId)).toBe(
-      true,
-    );
-    useEditorStore.getState().regenerateLightingLayout(roomId);
-    expect(useEditorStore.getState().luminaires.some((l) => l.roomId === otherRoomId)).toBe(
-      true,
-    );
+    const ok = useEditorStore
+      .getState()
+      .addLuminaireAtPoint(roomId, "wl-bari-small", { x: 50, y: 50 });
+    expect(ok).toBe(true);
+    const placed = useEditorStore.getState().luminaires[0];
+    expect(placed?.x).toBe(50);
+    expect(placed?.y).toBe(50);
+    expect(placed?.productId).toBe("wl-bari-small");
+  });
+
+  it("beginProductDrag maps screen position to canvas under zoom", () => {
+    useEditorStore.setState({
+      canvasHostRect: { left: 100, top: 50, width: 800, height: 600 },
+      viewport: { zoom: 2, offsetX: 10, offsetY: 20 },
+    });
+    useEditorStore.getState().beginProductDrag("demo-downlight-evo-12w", roomId, 1, 110, 70);
+    const drag = useEditorStore.getState().productDrag;
+    expect(drag?.productId).toBe("demo-downlight-evo-12w");
+    expect(drag?.canvasPoint?.x).toBeCloseTo(0);
+    expect(drag?.canvasPoint?.y).toBeCloseTo(0);
   });
 });

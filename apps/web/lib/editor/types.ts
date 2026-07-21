@@ -16,6 +16,23 @@ export type EditorTool = "select" | "pan" | "scale" | "draw-room";
 
 export type EditorPropertiesTab = "room" | "lighting" | "output";
 
+export interface CanvasHostRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+export interface ProductDragSession {
+  productId: string;
+  roomId: string;
+  pointerId: number;
+  screenX: number;
+  screenY: number;
+  overCanvas: boolean;
+  canvasPoint: Point | null;
+}
+
 export interface EditorDocumentState {
   scale: ScaleCalibration | null;
   rooms: Room[];
@@ -37,6 +54,9 @@ export interface EditorState extends EditorDocumentState {
   selectedLuminaireId: string | null;
   layoutWallMarginMetres: number;
   isDraggingLuminaire: boolean;
+  productDrag: ProductDragSession | null;
+  placementMessage: string | null;
+  canvasHostRect: CanvasHostRect | null;
   scaleDraftPoints: Point[];
   drawDraftVertices: Point[];
   floorPlanUrl: string | null;
@@ -60,6 +80,9 @@ export const initialEditorState: EditorState = {
   selectedLuminaireId: null,
   layoutWallMarginMetres: DEFAULT_LAYOUT_WALL_MARGIN_METRES,
   isDraggingLuminaire: false,
+  productDrag: null,
+  placementMessage: null,
+  canvasHostRect: null,
   scaleDraftPoints: [],
   drawDraftVertices: [],
   floorPlanUrl: null,

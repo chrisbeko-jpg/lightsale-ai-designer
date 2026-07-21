@@ -229,27 +229,30 @@ export function renderPlanCanvas(
   ctx.restore();
 }
 
+export const STANDARD_PLAN_CANVAS_LAYOUT: PlanRenderLayout = {
+  canvasWidth: 1600,
+  canvasHeight: 1100,
+  planAreaX: 1600 * 0.06,
+  planAreaY: 1100 * 0.12,
+  planAreaWidth: 1600 * 0.88,
+  planAreaHeight: 1100 * 0.78,
+};
+
 export async function renderPlanToDataUrl(
   input: PlanRenderInput,
+  options?: { layout?: PlanRenderLayout; heatmap?: boolean },
 ): Promise<string> {
+  const layout = options?.layout ?? STANDARD_PLAN_CANVAS_LAYOUT;
+  const heatmap = options?.heatmap ?? false;
   const canvas = document.createElement("canvas");
-  const canvasWidth = 1600;
-  const canvasHeight = 1100;
-  canvas.width = canvasWidth;
-  canvas.height = canvasHeight;
+  canvas.width = layout.canvasWidth;
+  canvas.height = layout.canvasHeight;
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     throw new Error("Canvas not supported");
   }
 
-  renderPlanCanvas(ctx, input, {
-    canvasWidth,
-    canvasHeight,
-    planAreaX: canvasWidth * 0.06,
-    planAreaY: canvasHeight * 0.12,
-    planAreaWidth: canvasWidth * 0.88,
-    planAreaHeight: canvasHeight * 0.78,
-  }, { heatmap: input.settings.includeLightIndicatorInPdf });
+  renderPlanCanvas(ctx, input, layout, { heatmap });
 
   return canvas.toDataURL("image/png");
 }

@@ -147,6 +147,14 @@ export {
 export type { PlanViewportTransform, PlanSourceDimensions } from "./plan-viewport.js";
 
 export {
+  calculateFloorplanPdfTransform,
+} from "./pdf-floorplan-transform.js";
+export type {
+  FloorplanPdfTransform,
+  FloorplanPdfTransformInput,
+} from "./pdf-floorplan-transform.js";
+
+export {
   INDICATIVE_LUX_DISCLAIMER_NL,
   INDICATIVE_LUX_PDF_DISCLAIMER_NL,
   calculateEffectiveLumens,
@@ -190,6 +198,14 @@ export type {
 export {
   createLuminairesFromGridPoints,
   generateLuminairesForRoom,
+  validateLuminairePlacementAtPoint,
+  findRoomContainingPoint,
+  isPointWithinFloorPlanBounds,
+  createLuminaireAtPoint,
+} from "./luminaire-placement.js";
+export type {
+  FloorPlanBounds,
+  LuminairePlacementValidationInput,
 } from "./luminaire-placement.js";
 
 export {

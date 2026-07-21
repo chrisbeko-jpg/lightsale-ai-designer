@@ -31,9 +31,22 @@ import {
 
   validateManualLuminairePlacement,
 
+  validateLuminairePlacementAtPoint,
+
+  createLuminaireAtPoint,
+
+  findRoomContainingPoint,
+
+  getCatalogProducts,
+
   zoomAtPoint,
 
 } from "@lightsale/shared";
+
+import {
+  isScreenPointOverCanvasHost,
+  screenPointToCanvas,
+} from "./canvas-coords";
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -135,6 +148,30 @@ interface EditorActions {
   duplicateSelectedLuminaire: () => void;
 
   addLuminaireManually: (roomId: string) => boolean;
+
+  addLuminaireAtPoint: (
+    roomId: string,
+    productId: string,
+    point: Point,
+  ) => boolean;
+
+  tryPlaceLuminaireAtCanvasPoint: (point: Point) => boolean;
+
+  beginProductDrag: (
+    productId: string,
+    roomId: string,
+    pointerId: number,
+    screenX: number,
+    screenY: number,
+  ) => void;
+
+  updateProductDrag: (screenX: number, screenY: number) => void;
+
+  endProductDrag: (screenX: number, screenY: number) => void;
+
+  setCanvasHostRect: (rect: EditorState["canvasHostRect"]) => void;
+
+  clearPlacementMessage: () => void;
 
   setDraggingLuminaire: (dragging: boolean) => void;
 
@@ -989,6 +1026,294 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     return true;
 
   },
+
+
+
+  addLuminaireAtPoint: (roomId, productId, point) => {
+
+    const state = get();
+
+    const room = state.rooms.find((item) => item.id === roomId);
+
+    if (room === undefined) {
+
+      return false;
+
+    }
+
+    const product = getProductById(productId);
+
+    const validation = validateLuminairePlacementAtPoint({
+
+      scale: state.scale,
+
+      room,
+
+      product,
+
+      point,
+
+      floorPlanBounds: state.floorPlanSize,
+
+      catalogProducts: getCatalogProducts(),
+
+    });
+
+    if (!validation.ok || product === undefined) {
+
+      set({ placementMessage: validation.reason ?? "Cannot place luminaire here." });
+
+      return false;
+
+    }
+
+    const luminaire = createLuminaireAtPoint({
+
+      id: uuidv4(),
+
+      roomId,
+
+      productId: product.id,
+
+      point,
+
+    });
+
+    get().mutateDocument((doc) => ({
+
+      ...doc,
+
+      luminaires: [...doc.luminaires, luminaire],
+
+    }));
+
+    set({
+
+      selectedLuminaireId: luminaire.id,
+
+      selectedRoomId: roomId,
+
+      placementMessage: null,
+
+    });
+
+    return true;
+
+  },
+
+
+
+  tryPlaceLuminaireAtCanvasPoint: (point) => {
+
+    const state = get();
+
+    const room = findRoomContainingPoint(point, state.rooms);
+
+    if (room === undefined || room.selectedProductId === null) {
+
+      return false;
+
+    }
+
+    return get().addLuminaireAtPoint(room.id, room.selectedProductId, point);
+
+  },
+
+
+
+  beginProductDrag: (productId, roomId, pointerId, screenX, screenY) => {
+
+    const state = get();
+
+    const overCanvas = isScreenPointOverCanvasHost(
+
+      screenX,
+
+      screenY,
+
+      state.canvasHostRect,
+
+    );
+
+    const canvasPoint =
+
+      overCanvas && state.canvasHostRect
+
+        ? screenPointToCanvas(
+
+            screenX,
+
+            screenY,
+
+            state.canvasHostRect,
+
+            state.viewport,
+
+          )
+
+        : null;
+
+    set({
+
+      productDrag: {
+
+        productId,
+
+        roomId,
+
+        pointerId,
+
+        screenX,
+
+        screenY,
+
+        overCanvas,
+
+        canvasPoint,
+
+      },
+
+      placementMessage: null,
+
+    });
+
+  },
+
+
+
+  updateProductDrag: (screenX, screenY) => {
+
+    const state = get();
+
+    if (!state.productDrag) {
+
+      return;
+
+    }
+
+    const overCanvas = isScreenPointOverCanvasHost(
+
+      screenX,
+
+      screenY,
+
+      state.canvasHostRect,
+
+    );
+
+    const canvasPoint =
+
+      overCanvas && state.canvasHostRect
+
+        ? screenPointToCanvas(
+
+            screenX,
+
+            screenY,
+
+            state.canvasHostRect,
+
+            state.viewport,
+
+          )
+
+        : null;
+
+    set({
+
+      productDrag: {
+
+        ...state.productDrag,
+
+        screenX,
+
+        screenY,
+
+        overCanvas,
+
+        canvasPoint,
+
+      },
+
+    });
+
+  },
+
+
+
+  endProductDrag: (screenX, screenY) => {
+
+    const state = get();
+
+    const session = state.productDrag;
+
+    if (!session) {
+
+      return;
+
+    }
+
+    set({ productDrag: null });
+
+    const overCanvas = isScreenPointOverCanvasHost(
+
+      screenX,
+
+      screenY,
+
+      state.canvasHostRect,
+
+    );
+
+    if (!overCanvas || !state.canvasHostRect) {
+
+      set({ placementMessage: "Drop on the floor plan to place the luminaire." });
+
+      return;
+
+    }
+
+    const point = screenPointToCanvas(
+
+      screenX,
+
+      screenY,
+
+      state.canvasHostRect,
+
+      state.viewport,
+
+    );
+
+    const placed = get().addLuminaireAtPoint(
+
+      session.roomId,
+
+      session.productId,
+
+      point,
+
+    );
+
+    if (placed) {
+
+      get().updateRoomProperties(session.roomId, {
+
+        selectedProductId: session.productId,
+
+      });
+
+    }
+
+  },
+
+
+
+  setCanvasHostRect: (rect) => set({ canvasHostRect: rect }),
+
+
+
+  clearPlacementMessage: () => set({ placementMessage: null }),
 
 
 

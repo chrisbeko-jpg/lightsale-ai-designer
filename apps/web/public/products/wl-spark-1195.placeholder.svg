@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Placeholder product photo">
+  <!-- TEMPORARY MVP placeholder  replace with official WL Spark 1195x295 photo -->
+  <rect width="128" height="128" fill="#1e293b"/>
+  <rect x="12" y="44" width="104" height="40" rx="4" fill="#334155" stroke="#94a3b8" stroke-width="2"/>
+  <rect x="18" y="50" width="92" height="28" fill="#0f172a"/>
+  <rect x="24" y="56" width="80" height="16" fill="#f2c94c" opacity="0.35"/>
+  <text x="64" y="118" text-anchor="middle" fill="#94a3b8" font-size="7" font-family="system-ui,sans-serif">Panel · 1195×295</text>
+</svg>

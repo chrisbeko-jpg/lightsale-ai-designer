@@ -20,6 +20,7 @@ interface LuminaireSymbolProps {
   isSelected: boolean;
   zoom: number;
   positionNumber?: number;
+  previewOnly?: boolean;
 }
 
 export function LuminaireSymbol({
@@ -28,6 +29,7 @@ export function LuminaireSymbol({
   isSelected,
   zoom,
   positionNumber,
+  previewOnly = false,
 }: LuminaireSymbolProps) {
   const moveLuminaire = useEditorStore((s) => s.moveLuminaire);
   const scale = useEditorStore((s) => s.scale);
@@ -59,7 +61,7 @@ export function LuminaireSymbol({
     ? "rgba(208, 91, 91, 0.35)"
     : withAlpha(productColor, 0.85);
 
-  const draggable = activeTool === "select";
+  const draggable = activeTool === "select" && !previewOnly;
 
   const handleSelect = (event: KonvaEventObject<MouseEvent | TouchEvent>) => {
     event.cancelBubble = true;
@@ -93,10 +95,12 @@ export function LuminaireSymbol({
       y={luminaire.y}
       rotation={luminaire.rotationDegrees}
       draggable={draggable}
-      onClick={handleSelect}
-      onTap={handleSelect}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
+      listening={!previewOnly}
+      opacity={previewOnly ? 0.85 : 1}
+      onClick={previewOnly ? undefined : handleSelect}
+      onTap={previewOnly ? undefined : handleSelect}
+      onDragStart={previewOnly ? undefined : handleDragStart}
+      onDragEnd={previewOnly ? undefined : handleDragEnd}
     >
       <Circle
         radius={hitRadius}

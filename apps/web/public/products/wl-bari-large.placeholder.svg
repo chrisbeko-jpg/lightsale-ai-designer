@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Placeholder product photo">
+  <!-- TEMPORARY MVP placeholder  replace with official WL Bari Large photo -->
+  <rect width="128" height="128" fill="#1e293b"/>
+  <circle cx="64" cy="58" r="44" fill="#334155" stroke="#94a3b8" stroke-width="3"/>
+  <circle cx="64" cy="58" r="26" fill="#0f172a"/>
+  <circle cx="64" cy="58" r="10" fill="#f2c94c"/>
+  <text x="64" y="118" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="system-ui,sans-serif">Downlight · Bari L</text>
+</svg>

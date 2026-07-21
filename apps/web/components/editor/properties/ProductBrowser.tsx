@@ -87,6 +87,7 @@ export function ProductBrowser({ room, onPatch }: ProductBrowserProps) {
             <li key={product.id}>
               <ProductCard
                 product={product}
+                roomId={room.id}
                 selected={room.selectedProductId === product.id}
                 onSelect={() => onPatch({ selectedProductId: product.id })}
               />

@@ -22,7 +22,9 @@ import { jsPDF } from "jspdf";
 import {
   loadImageElement,
   renderPlanToDataUrl,
+  STANDARD_PLAN_CANVAS_LAYOUT,
 } from "./render-plan-image";
+import { planImageRectMm } from "./pdf-plan-layout";
 import {
   PDF_IMAGE_ERROR_NL,
   prepareImageForPdf,
@@ -132,7 +134,7 @@ export async function exportLightingPlanPdf(
     logoPng = null;
   }
 
-  const planDataUrlRaw = await renderPlanToDataUrl({
+  const planRenderInput = {
     rooms: document.rooms,
     luminaires: document.luminaires,
     scale: document.scale,
@@ -140,106 +142,136 @@ export async function exportLightingPlanPdf(
     floorPlanImage,
     pixelWidth: document.floorPlanSize?.width ?? floorPlanImage?.naturalWidth ?? 0,
     pixelHeight: document.floorPlanSize?.height ?? floorPlanImage?.naturalHeight ?? 0,
+  };
+
+  const planPlainRaw = await renderPlanToDataUrl(planRenderInput, {
+    layout: STANDARD_PLAN_CANVAS_LAYOUT,
+    heatmap: false,
+  });
+  const planHeatRaw = await renderPlanToDataUrl(planRenderInput, {
+    layout: STANDARD_PLAN_CANVAS_LAYOUT,
+    heatmap: true,
   });
 
-  const planDataUrl = await preparePngDataUrlForPdfExport(planDataUrlRaw);
-  if (planDataUrl === null || !validatePngDataUrl(planDataUrl)) {
+  const planPlain = await preparePngDataUrlForPdfExport(planPlainRaw);
+  const planHeat = await preparePngDataUrlForPdfExport(planHeatRaw);
+  if (
+    planPlain === null ||
+    planHeat === null ||
+    !validatePngDataUrl(planPlain) ||
+    !validatePngDataUrl(planHeat)
+  ) {
     throw new Error(PDF_IMAGE_ERROR_NL);
   }
 
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const coverW = doc.internal.pageSize.getWidth();
+  const coverH = doc.internal.pageSize.getHeight();
 
   if (logoPng) {
-    doc.addImage(logoPng, "PNG", 14, 10, 32, 10);
+    doc.addImage(logoPng, "PNG", 14, 16, 48, 14);
   } else {
-    doc.setFontSize(14);
+    doc.setFontSize(18);
     doc.setTextColor(...CHARCOAL);
-    doc.text("Lightsale", 14, 16);
+    doc.text("Lightsale", 14, 22);
   }
 
   doc.setFillColor(...ACCENT);
-  doc.rect(14, 22, pageW - 28, 1.2, "F");
+  doc.rect(14, 34, coverW - 28, 1.2, "F");
 
-  doc.setFontSize(16);
+  doc.setFontSize(22);
   doc.setTextColor(...CHARCOAL);
-  doc.text(meta.projectName, 14, 30);
+  doc.text(meta.projectName, 14, 48);
 
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setTextColor(...MUTED);
-  let infoY = 36;
-  const infoLines: string[] = [];
-  if (meta.customerName) {
-    infoLines.push(`Klant: ${meta.customerName}`);
-  }
-  if (meta.projectAddress) {
-    infoLines.push(`Adres: ${meta.projectAddress}`);
-  }
-  if (meta.projectReference) {
-    infoLines.push(`Referentie: ${meta.projectReference}`);
-  }
-  if (meta.designerName) {
-    infoLines.push(`Ontwerper: ${meta.designerName}`);
-  }
-  infoLines.push(`Datum: ${meta.outputDate || new Date().toISOString().slice(0, 10)}`);
-  for (const line of infoLines) {
-    doc.text(line, 14, infoY);
-    infoY += 4.5;
+  let coverY = 58;
+  const coverLines: Array<[string, string]> = [
+    ["Klant", meta.customerName || "—"],
+    ["Projectnummer", meta.projectReference || "—"],
+    ["Adres", meta.projectAddress || "—"],
+    ["Contact / opsteller", meta.designerName || "—"],
+    ["Datum", meta.outputDate || new Date().toISOString().slice(0, 10)],
+    ["Versie", "1.0"],
+  ];
+  for (const [label, value] of coverLines) {
+    doc.setFont("helvetica", "bold");
+    doc.text(`${label}:`, 14, coverY);
+    doc.setFont("helvetica", "normal");
+    doc.text(value.slice(0, 90), 52, coverY);
+    coverY += 6;
   }
 
-  doc.setFontSize(8);
+  coverY += 4;
+  doc.setFontSize(9);
   doc.text(
-    `Ruimtes: ${document.rooms.length} · Armaturen: ${lightingSummary.totalLuminaires} · ${Math.round(lightingSummary.totalInstalledWattage)} W · Doel gehaald: ${lightingSummary.roomsMeetingTarget}/${lightingSummary.roomsMeetingTarget + lightingSummary.roomsNotMeetingTarget}`,
+    meta.notes.trim() ||
+      "Indicatief lichtplan op basis van de lumenmethode. Geen vervanging voor DIALux of photometrische berekening.",
     14,
-    infoY + 2,
+    coverY,
+    { maxWidth: coverW - 28 },
   );
+  coverY += 14;
+  doc.setFontSize(8);
+  doc.text(INDICATIVE_LUX_DISCLAIMER_NL, 14, coverY, { maxWidth: coverW - 28 });
 
-  const planTop = infoY + 8;
-  const planHeight = pageH - planTop - 22;
-  const planWidth = pageW - 28;
-  const canvasAspect = 1600 / 1100;
-  const boxAspect = planWidth / planHeight;
-  let drawW = planWidth;
-  let drawH = planHeight;
-  let drawX = 14;
-  let drawY = planTop;
-  if (boxAspect > canvasAspect) {
-    drawH = planWidth / canvasAspect;
-    drawY = planTop + (planHeight - drawH) / 2;
-  } else {
-    drawW = planHeight * canvasAspect;
-    drawX = 14 + (planWidth - drawW) / 2;
-  }
-  doc.addImage(planDataUrl, "PNG", drawX, drawY, drawW, drawH);
+  const planMargins = { top: 18, right: 14, bottom: 22, left: 14 };
+  const planPx = {
+    width: STANDARD_PLAN_CANVAS_LAYOUT.canvasWidth,
+    height: STANDARD_PLAN_CANVAS_LAYOUT.canvasHeight,
+  };
 
-  if (document.outputSettings.showLegend && legend.length > 0) {
-    let legendY = planTop + 4;
-    doc.setFontSize(8);
+  const addPlanPage = (imageData: string, title: string, heatmapNote: boolean) => {
+    doc.addPage("a4", "landscape");
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    doc.setFontSize(13);
     doc.setTextColor(...CHARCOAL);
-    doc.text("Legenda", pageW - 52, legendY);
-    legendY += 4;
-    for (const entry of legend.slice(0, 10)) {
-      doc.setFillColor(entry.color);
-      doc.circle(pageW - 50, legendY - 1.2, 1.4, "F");
-      doc.setTextColor(...CHARCOAL);
-      doc.text(entry.label.slice(0, 24), pageW - 47, legendY);
-      legendY += 4;
-    }
-  }
-
-  if (document.outputSettings.includeLightIndicatorInPdf) {
-    doc.setFontSize(7);
+    doc.text(title, 14, 12);
+    doc.setFontSize(8);
     doc.setTextColor(...MUTED);
-    doc.text(
-      "Light Indicator: paars = hoogste indicatieve concentratie · rood = laag · geen kleur = weinig bijdrage (indicatief, geen uniformiteit)",
-      14,
-      pageH - 18,
-      { maxWidth: pageW - 28 },
-    );
-  }
+    doc.text(meta.projectName, pageW - 14, 12, { align: "right" });
+
+    const rect = planImageRectMm({
+      pageWidthMm: pageW,
+      pageHeightMm: pageH,
+      sourceWidthPx: planPx.width,
+      sourceHeightPx: planPx.height,
+      margins: planMargins,
+    });
+    doc.addImage(imageData, "PNG", rect.x, rect.y, rect.width, rect.height);
+
+    if (document.outputSettings.showLegend && legend.length > 0) {
+      let legendY = 16;
+      doc.setFontSize(7);
+      doc.setTextColor(...CHARCOAL);
+      doc.text("Legenda", pageW - 54, legendY);
+      legendY += 3.5;
+      for (const entry of legend.slice(0, 8)) {
+        doc.setFillColor(entry.color);
+        doc.circle(pageW - 52, legendY - 1, 1.2, "F");
+        doc.text(entry.label.slice(0, 28), pageW - 49, legendY);
+        legendY += 3.5;
+      }
+    }
+
+    if (heatmapNote) {
+      doc.setFontSize(7);
+      doc.setTextColor(...MUTED);
+      doc.text(
+        "Light Indicator (indicatief): paars = hoge concentratie · rood = laag · geen kleur = weinig bijdrage.",
+        14,
+        pageH - 8,
+        { maxWidth: pageW - 28 },
+      );
+    }
+  };
+
+  addPlanPage(planPlain, "Lichtplan — armaturen", false);
+  addPlanPage(planHeat, "Lichtplan — Light Indicator", true);
 
   doc.addPage("a4", "portrait");
+  const pageW = doc.internal.pageSize.getWidth();
   let ry = 18;
   doc.setFontSize(16);
   doc.setTextColor(...CHARCOAL);

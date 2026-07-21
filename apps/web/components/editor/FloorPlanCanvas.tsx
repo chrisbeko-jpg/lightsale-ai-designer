@@ -29,6 +29,10 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
   const floorPlanUrl = useEditorStore((s) => s.floorPlanUrl);
   const floorPlanMimeType = useEditorStore((s) => s.floorPlanMimeType);
   const outputSettings = useEditorStore((s) => s.outputSettings);
+  const productDrag = useEditorStore((s) => s.productDrag);
+  const tryPlaceLuminaireAtCanvasPoint = useEditorStore(
+    (s) => s.tryPlaceLuminaireAtCanvasPoint,
+  );
   const positionNumbers = useLuminairePositionNumberMap();
 
   const pan = useEditorStore((s) => s.pan);
@@ -117,6 +121,9 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
     }
 
     if (activeTool === "select") {
+      if (tryPlaceLuminaireAtCanvasPoint(canvasPoint)) {
+        return;
+      }
       const stage = event.target.getStage();
       if (stage && event.target === stage) {
         selectRoom(null);
@@ -158,7 +165,7 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
       onTouchStart={handlePointerDown}
       onTouchMove={handlePointerMove}
       onTouchEnd={handlePointerUp}
-      className="cursor-crosshair bg-[#111820]"
+      className={`cursor-crosshair bg-[#111820] ${productDrag?.overCanvas ? "ring-2 ring-inset ring-[var(--accent)]" : ""}`}
     >
       <Layer
         x={viewport.offsetX}
@@ -199,6 +206,31 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
             />
           );
         })}
+
+        {productDrag?.overCanvas && productDrag.canvasPoint ? (
+          (() => {
+            const room = rooms.find((item) => item.id === productDrag.roomId);
+            return (
+              <LuminaireSymbol
+                key="product-drag-preview"
+                luminaire={{
+                  id: "drag-preview",
+                  roomId: productDrag.roomId,
+                  productId: productDrag.productId,
+                  x: productDrag.canvasPoint.x,
+                  y: productDrag.canvasPoint.y,
+                  rotationDegrees: 0,
+                  placementSource: "manual",
+                  createdAt: "",
+                }}
+                room={room}
+                isSelected={false}
+                zoom={viewport.zoom}
+                previewOnly
+              />
+            );
+          })()
+        ) : null}
 
         {drawDraftVertices.length > 0 ? (
           <Line

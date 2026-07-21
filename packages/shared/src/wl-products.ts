@@ -32,7 +32,7 @@ export const WL_LIGHTING_PRODUCTS = [
     suitableRoomTypes: [...ROOMS_WIDE],
     suitableStylePresets: [...STYLES],
     beamAngleDegrees: 36,
-    imageUrl: "/product-thumbnails/track_spot.svg",
+    imageUrl: "/products/wl-milano-s.placeholder.svg",
     dimensions: { shape: "circle", diameterMm: 85 },
   },
   {
@@ -50,7 +50,7 @@ export const WL_LIGHTING_PRODUCTS = [
     suitableRoomTypes: [...ROOMS_WIDE],
     suitableStylePresets: [...STYLES],
     beamAngleDegrees: 36,
-    imageUrl: "/product-thumbnails/track_spot.svg",
+    imageUrl: "/products/wl-milano-xl.placeholder.svg",
     dimensions: { shape: "circle", diameterMm: 105 },
   },
   {
@@ -68,7 +68,7 @@ export const WL_LIGHTING_PRODUCTS = [
     suitableRoomTypes: [...ROOMS_WIDE],
     suitableStylePresets: [...STYLES, "custom"],
     beamAngleDegrees: 36,
-    imageUrl: "/product-thumbnails/track_spot.svg",
+    imageUrl: "/products/wl-palermo.placeholder.svg",
     dimensions: { shape: "circle", diameterMm: 110 },
   },
   {
@@ -85,7 +85,7 @@ export const WL_LIGHTING_PRODUCTS = [
     suitableRoomTypes: [...ROOMS_WIDE],
     suitableStylePresets: [...STYLES],
     beamAngleDegrees: 60,
-    imageUrl: "/product-thumbnails/downlight.svg",
+    imageUrl: "/products/wl-bari-small.placeholder.svg",
     dimensions: { shape: "circle", diameterMm: 105 },
   },
   {
@@ -102,7 +102,7 @@ export const WL_LIGHTING_PRODUCTS = [
     suitableRoomTypes: [...ROOMS_WIDE],
     suitableStylePresets: [...STYLES],
     beamAngleDegrees: 60,
-    imageUrl: "/product-thumbnails/downlight.svg",
+    imageUrl: "/products/wl-bari-large.placeholder.svg",
     dimensions: { shape: "circle", diameterMm: 200 },
   },
   {
@@ -119,7 +119,7 @@ export const WL_LIGHTING_PRODUCTS = [
     suitableRoomTypes: [...ROOMS_WIDE],
     suitableStylePresets: [...STYLES],
     beamAngleDegrees: 36,
-    imageUrl: "/product-thumbnails/surface_spot.svg",
+    imageUrl: "/products/wl-gela-tube.placeholder.svg",
     dimensions: { shape: "circle", diameterMm: 85 },
   },
   {
@@ -135,7 +135,7 @@ export const WL_LIGHTING_PRODUCTS = [
     suitableRoomTypes: [...ROOMS_WIDE],
     suitableStylePresets: [...STYLES],
     beamAngleDegrees: 110,
-    imageUrl: "/product-thumbnails/panel.svg",
+    imageUrl: "/products/wl-spark-595.placeholder.svg",
     dimensions: { shape: "rectangle", widthMm: 595, lengthMm: 595 },
   },
   {
@@ -151,7 +151,7 @@ export const WL_LIGHTING_PRODUCTS = [
     suitableRoomTypes: [...ROOMS_WIDE],
     suitableStylePresets: [...STYLES],
     beamAngleDegrees: 110,
-    imageUrl: "/product-thumbnails/panel.svg",
+    imageUrl: "/products/wl-spark-1195.placeholder.svg",
     dimensions: { shape: "rectangle", widthMm: 295, lengthMm: 1195 },
   },
 ] as const;
