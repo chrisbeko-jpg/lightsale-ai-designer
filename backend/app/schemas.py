@@ -200,11 +200,12 @@ class ProjectDocumentModel(BaseModel):
     )
     viewport: ViewportStateModel | None = None
 
+    @model_validator(mode="before")
     @classmethod
-    def model_validate(cls, obj: Any, **kwargs: Any) -> ProjectDocumentModel:
-        if isinstance(obj, dict):
-            obj = normalize_project_document(obj)
-        return super().model_validate(obj, **kwargs)
+    def normalize_document(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            return normalize_project_document(data)
+        return data
 
 
 class ProjectModel(BaseModel):
@@ -229,12 +230,12 @@ class UpdateProjectDocumentRequest(BaseModel):
     )
     viewport: ViewportStateModel | None = None
 
+    @model_validator(mode="before")
     @classmethod
-    def model_validate(cls, obj: Any, **kwargs: Any) -> UpdateProjectDocumentRequest:
-        if isinstance(obj, dict):
-            normalized = normalize_project_document(obj)
-            return super().model_validate(normalized, **kwargs)
-        return super().model_validate(obj, **kwargs)
+    def normalize_document(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            return normalize_project_document(data)
+        return data
 
 
 class ProjectListItem(BaseModel):
