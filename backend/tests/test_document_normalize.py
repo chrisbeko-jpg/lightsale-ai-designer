@@ -28,6 +28,12 @@ def test_normalize_project_document_null():
     assert doc["outputSettings"]["showLuxSummary"] is True
 
 
+def test_normalize_output_settings_null_project_name():
+    result = normalize_output_settings({"projectName": None, "customerName": None})
+    assert "projectName" not in result
+    assert result["customerName"] == ""
+
+
 def test_default_document_includes_output_settings():
     from app.schemas import default_document
 

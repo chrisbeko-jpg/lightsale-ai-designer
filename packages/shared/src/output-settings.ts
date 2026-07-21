@@ -33,7 +33,29 @@ function outputSettingsPreprocessInput(value: unknown): Record<string, unknown> 
   if (typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
-  return value as Record<string, unknown>;
+  const record = value as Record<string, unknown>;
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(record)) {
+    if (val === null) {
+      if (key === "projectName") {
+        continue;
+      }
+      if (
+        key === "customerName" ||
+        key === "projectReference" ||
+        key === "projectAddress" ||
+        key === "designerName" ||
+        key === "outputDate" ||
+        key === "notes"
+      ) {
+        cleaned[key] = "";
+        continue;
+      }
+      continue;
+    }
+    cleaned[key] = val;
+  }
+  return cleaned;
 }
 
 /** Accepts null, missing keys (via parent), partial objects; always parses to full OutputSettings. */

@@ -35,6 +35,18 @@ def normalize_output_settings(value: Any) -> dict[str, Any]:
         return default_output_settings()
     merged = default_output_settings()
     merged.update(value)
+    if merged.get("projectName") is None:
+        merged.pop("projectName", None)
+    for key in (
+        "customerName",
+        "projectReference",
+        "projectAddress",
+        "designerName",
+        "outputDate",
+        "notes",
+    ):
+        if merged.get(key) is None:
+            merged[key] = ""
     return merged
 
 

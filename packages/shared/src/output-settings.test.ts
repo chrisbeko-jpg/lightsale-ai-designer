@@ -68,6 +68,23 @@ describe("ProjectSchema", () => {
     floorPlan: null,
   };
 
+  it("parses project when document.outputSettings.projectName is null", () => {
+    const parsed = ProjectSchema.parse({
+      ...baseProject,
+      document: {
+        scale: null,
+        rooms: [],
+        luminaires: [],
+        outputSettings: {
+          projectName: null,
+          showLegend: true,
+        },
+      },
+    });
+    expect(parsed.document.outputSettings.projectName).toBeUndefined();
+    expect(parsed.document.outputSettings.showLegend).toBe(true);
+  });
+
   it("parses project when document.outputSettings is null", () => {
     const parsed = ProjectSchema.parse({
       ...baseProject,

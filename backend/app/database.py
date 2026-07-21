@@ -70,3 +70,13 @@ async def init_db() -> None:
                 "Repaired null or missing outputSettings on %s project(s)",
                 repair_count,
             )
+        await conn.execute(
+            text(
+                """
+                UPDATE projects
+                SET document = document #- '{outputSettings,projectName}'
+                WHERE document->'outputSettings' ? 'projectName'
+                  AND document->'outputSettings'->'projectName' = 'null'::jsonb
+                """
+            )
+        )
