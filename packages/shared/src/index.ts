@@ -304,3 +304,32 @@ export {
 } from "./pdf-image-prep.js";
 
 export { WL_LIGHTING_PRODUCTS, WL_PRODUCT_IDS } from "./wl-products.js";
+
+export {
+  DESIGN_LIBRARY_PROJECT_STATUSES,
+  DESIGN_LIBRARY_PROJECT_TYPES,
+  DESIGN_LIBRARY_STYLE_PRESETS,
+  DESIGN_LIBRARY_FILE_CATEGORIES,
+  DESIGN_LIBRARY_ROOM_TYPES,
+  DESIGN_LIBRARY_CEILING_TYPES,
+  DESIGN_LIBRARY_PLACEMENT_TYPES,
+  DESIGN_LIBRARY_ALIGNMENT_TYPES,
+  DESIGN_NOTE_CATEGORIES,
+  DESIGN_NOTE_PRIORITIES,
+  DESIGN_NOTE_STATUSES,
+  DesignLibraryProjectSchema,
+  DesignLibraryFileSchema,
+  DesignLibraryRoomSchema,
+  DesignLibraryRoomProductSchema,
+  DesignLibraryInterpretationSchema,
+  DesignLibraryPlacementStrategySchema,
+  DesignNoteSchema,
+  defaultDesignLibraryInterpretation,
+  normalizeDesignLibraryProjectInput,
+} from "./design-library.js";
+export type {
+  DesignLibraryProject,
+  DesignLibraryFile,
+  DesignLibraryRoom,
+  DesignNote,
+} from "./design-library.js";
