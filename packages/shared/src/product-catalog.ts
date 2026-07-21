@@ -225,8 +225,13 @@ const LEGACY_LIGHTING_PRODUCTS: LightingProduct[] = [
   },
 ];
 
+/** Validated WL sample catalogue (default when no external product DB is configured). */
+export const WL_CATALOG_PRODUCTS: LightingProduct[] = WL_LIGHTING_PRODUCTS.map(
+  (product) => LightingProductSchema.parse(product),
+);
+
 export const ALL_LIGHTING_PRODUCTS: LightingProduct[] = [
-  ...(WL_LIGHTING_PRODUCTS as unknown as LightingProduct[]),
+  ...WL_CATALOG_PRODUCTS,
   ...LEGACY_LIGHTING_PRODUCTS.map((product) => ({ ...product, legacy: true })),
 ];
 
@@ -246,7 +251,7 @@ export function getAllProducts(): readonly LightingProduct[] {
 }
 
 export function getCatalogProducts(): readonly LightingProduct[] {
-  return WL_LIGHTING_PRODUCTS as unknown as LightingProduct[];
+  return WL_CATALOG_PRODUCTS;
 }
 
 export function isLegacyProduct(productId: string): boolean {

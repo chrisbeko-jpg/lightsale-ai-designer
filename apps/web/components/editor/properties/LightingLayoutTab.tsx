@@ -26,6 +26,8 @@ import { fieldClassName, labelClassName, primaryButtonClassName, secondaryButton
 
 import { ProductBrowser } from "./ProductBrowser";
 
+import { LightIndicatorLegend } from "./LightIndicatorLegend";
+
 import { LightingCalculationSummary } from "./LightingCalculationSummary";
 
 import { SelectedLuminairePanel } from "./SelectedLuminairePanel";
@@ -216,41 +218,11 @@ export function LightingLayoutTab() {
 
 
 
-      <div className="space-y-2 rounded border border-[var(--border)] bg-white p-3">
-
-        <h4 className={subsectionTitleClassName}>Light Indicator</h4>
-
-        <label className="flex cursor-pointer items-center gap-2 text-xs text-[var(--foreground)]">
-
-          <input
-
-            type="checkbox"
-
-            checked={showLightIndicator}
-
-            onChange={(event) =>
-
-              updateOutputSettings({ showLightIndicator: event.target.checked })
-
-            }
-
-            className="rounded border-[var(--border)]"
-
-          />
-
-          Show Light Indicator
-
-        </label>
-
-        <p className="text-[10px] text-[var(--muted)]">
-
-          Indicatieve dekking: paars = hoogste concentratie · rood = laag · geen kleur =
-
-          weinig bijdrage. Geen geverifieerde uniformiteit.
-
-        </p>
-
-      </div>
+      <LightIndicatorLegend
+        showToggle
+        checked={showLightIndicator}
+        onToggle={(value) => updateOutputSettings({ showLightIndicator: value })}
+      />
 
 
 

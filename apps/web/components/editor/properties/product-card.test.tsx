@@ -40,7 +40,7 @@ describe("ProductCard", () => {
     );
     expect(screen.getByTestId("product-drag-handle")).toBeTruthy();
     expect(
-      screen.getByLabelText(/Drag WL Bari Small 6W 930 to floor plan/i),
+      screen.getByLabelText(/Drag WL Bari Small to floor plan/i),
     ).toBeTruthy();
   });
 
