@@ -81,22 +81,49 @@ def _assert_owner(row: DesignLibraryProjectRow, owner_id: str) -> None:
         raise HTTPException(status_code=403, detail="Geen toegang tot dit referentieproject")
 
 
-async def _all_products_for_project(
-    project: DesignLibraryProjectRow,
-) -> list[DesignLibraryRoomProductRow]:
-    products: list[DesignLibraryRoomProductRow] = []
-    for room in project.rooms:
-        products.extend(room.products)
-    return products
+async def _project_interpretation_content(
+    session: AsyncSession,
+    project_id: uuid.UUID,
+) -> dict:
+    result = await session.execute(
+        select(DesignLibraryInterpretationRow).where(
+            DesignLibraryInterpretationRow.project_id == project_id,
+            DesignLibraryInterpretationRow.room_id.is_(None),
+        )
+    )
+    row = result.scalar_one_or_none()
+    if row is None:
+        return normalize_interpretation_content({})
+    return normalize_interpretation_content(row.content if isinstance(row.content, dict) else {})
+
+
+async def _project_rooms_with_products(
+    session: AsyncSession,
+    project_id: uuid.UUID,
+    *,
+    include_deleted: bool = False,
+) -> list[DesignLibraryRoomRow]:
+    query = (
+        select(DesignLibraryRoomRow)
+        .where(DesignLibraryRoomRow.project_id == project_id)
+        .options(selectinload(DesignLibraryRoomRow.products))
+        .order_by(DesignLibraryRoomRow.sort_order)
+    )
+    if not include_deleted:
+        query = query.where(DesignLibraryRoomRow.deleted_at.is_(None))
+    result = await session.execute(query)
+    return list(result.scalars().all())
 
 
 async def _refresh_searchable(
     project: DesignLibraryProjectRow,
     session: AsyncSession,
 ) -> None:
-    interpretation = get_project_interpretation(project.interpretations)
-    products = await _all_products_for_project(project)
-    active_rooms = [r for r in project.rooms if r.deleted_at is None]
+    interpretation = await _project_interpretation_content(session, project.id)
+    active_rooms = await _project_rooms_with_products(session, project.id)
+    products: list[DesignLibraryRoomProductRow] = []
+    for room in active_rooms:
+        products.extend(room.products)
     project.searchable_text = build_project_searchable_text(
         project, active_rooms, products, interpretation
     )
@@ -116,17 +143,18 @@ async def _sync_interpretation(
     session: AsyncSession,
 ) -> None:
     normalized = normalize_interpretation_content(content)
-    existing = None
-    for row in project.interpretations:
-        if row.room_id is None:
-            existing = row
-            break
+    result = await session.execute(
+        select(DesignLibraryInterpretationRow).where(
+            DesignLibraryInterpretationRow.project_id == project.id,
+            DesignLibraryInterpretationRow.room_id.is_(None),
+        )
+    )
+    existing = result.scalar_one_or_none()
     if existing is None:
         existing = DesignLibraryInterpretationRow(
             project_id=project.id, room_id=None, content=normalized
         )
         session.add(existing)
-        project.interpretations.append(existing)
     else:
         existing.content = normalized
         existing.updated_at = utc_now()
