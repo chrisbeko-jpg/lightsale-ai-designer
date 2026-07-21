@@ -6,6 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.document_normalize import default_output_settings, normalize_project_document
+
 VALID_ROOM_TYPES = frozenset(
     {
         "living_room",
@@ -193,8 +195,16 @@ class ProjectDocumentModel(BaseModel):
     scale: ScaleCalibrationModel | None = None
     rooms: list[RoomModel] = Field(default_factory=list)
     luminaires: list[LuminaireModel] = Field(default_factory=list)
-    outputSettings: OutputSettingsModel | None = None
+    outputSettings: OutputSettingsModel = Field(
+        default_factory=OutputSettingsModel
+    )
     viewport: ViewportStateModel | None = None
+
+    @classmethod
+    def model_validate(cls, obj: Any, **kwargs: Any) -> ProjectDocumentModel:
+        if isinstance(obj, dict):
+            obj = normalize_project_document(obj)
+        return super().model_validate(obj, **kwargs)
 
 
 class ProjectModel(BaseModel):
@@ -214,8 +224,17 @@ class UpdateProjectDocumentRequest(BaseModel):
     scale: ScaleCalibrationModel | None = None
     rooms: list[RoomModel] = Field(default_factory=list)
     luminaires: list[LuminaireModel] = Field(default_factory=list)
-    outputSettings: OutputSettingsModel | None = None
+    outputSettings: OutputSettingsModel = Field(
+        default_factory=OutputSettingsModel
+    )
     viewport: ViewportStateModel | None = None
+
+    @classmethod
+    def model_validate(cls, obj: Any, **kwargs: Any) -> UpdateProjectDocumentRequest:
+        if isinstance(obj, dict):
+            normalized = normalize_project_document(obj)
+            return super().model_validate(normalized, **kwargs)
+        return super().model_validate(obj, **kwargs)
 
 
 class ProjectListItem(BaseModel):
@@ -244,5 +263,6 @@ def default_document() -> dict[str, Any]:
         "scale": None,
         "rooms": [],
         "luminaires": [],
+        "outputSettings": default_output_settings(),
         "viewport": {"zoom": 1, "offsetX": 0, "offsetY": 0},
     }

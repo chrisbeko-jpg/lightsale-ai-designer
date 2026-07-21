@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { DEMO_PRODUCT_IDS, getProductById } from "./product-catalog.js";
 import { migrateLegacyRoomFields } from "./room-migration.js";
-import { OutputSettingsSchema } from "./output-settings.js";
+import { NormalizedOutputSettingsSchema, DEFAULT_OUTPUT_SETTINGS } from "./output-settings.js";
 
 export const PointSchema = z.object({
   x: z.number(),
@@ -237,7 +237,7 @@ export const ProjectDocumentSchema = z.object({
   scale: ScaleCalibrationSchema.nullable(),
   rooms: z.array(RoomSchema),
   luminaires: z.array(LuminaireSchema).default([]),
-  outputSettings: OutputSettingsSchema.optional(),
+  outputSettings: NormalizedOutputSettingsSchema.default(DEFAULT_OUTPUT_SETTINGS),
   viewport: ViewportStateSchema.optional(),
 });
 
@@ -246,6 +246,7 @@ export type ProjectDocument = z.infer<typeof ProjectDocumentSchema>;
 export type { OutputSettings } from "./output-settings.js";
 export {
   OutputSettingsSchema,
+  NormalizedOutputSettingsSchema,
   DEFAULT_OUTPUT_SETTINGS,
   normalizeOutputSettings,
 } from "./output-settings.js";
@@ -272,7 +273,7 @@ export const UpdateProjectDocumentInputSchema = z.object({
   scale: ScaleCalibrationSchema.nullable(),
   rooms: z.array(RoomSchema),
   luminaires: z.array(LuminaireSchema).default([]),
-  outputSettings: OutputSettingsSchema.optional(),
+  outputSettings: NormalizedOutputSettingsSchema.default(DEFAULT_OUTPUT_SETTINGS),
   viewport: ViewportStateSchema.optional(),
 });
 
@@ -290,5 +291,6 @@ export const EMPTY_PROJECT_DOCUMENT: ProjectDocument = {
   scale: null,
   rooms: [],
   luminaires: [],
+  outputSettings: DEFAULT_OUTPUT_SETTINGS,
   viewport: DEFAULT_VIEWPORT,
 };

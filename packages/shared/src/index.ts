@@ -206,6 +206,7 @@ export {
   OutputSettingsSchema,
   DEFAULT_OUTPUT_SETTINGS,
   normalizeOutputSettings,
+  NormalizedOutputSettingsSchema,
 } from "./output-settings.js";
 export type { OutputSettings, OutputSettingsPatch } from "./output-settings.js";
 

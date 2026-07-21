@@ -23,22 +23,30 @@ export const OutputSettingsSchema = z.object({
 
 export type OutputSettings = z.infer<typeof OutputSettingsSchema>;
 
-export const DEFAULT_OUTPUT_SETTINGS: OutputSettings = OutputSettingsSchema.parse(
-  {},
+export const DEFAULT_OUTPUT_SETTINGS: OutputSettings =
+  OutputSettingsSchema.parse({});
+
+function outputSettingsPreprocessInput(value: unknown): Record<string, unknown> {
+  if (value === null || value === undefined) {
+    return {};
+  }
+  if (typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return value as Record<string, unknown>;
+}
+
+/** Accepts null, missing keys (via parent), partial objects; always parses to full OutputSettings. */
+export const NormalizedOutputSettingsSchema = z.preprocess(
+  outputSettingsPreprocessInput,
+  OutputSettingsSchema,
 );
 
 export function normalizeOutputSettings(
   value: unknown,
   fallbackProjectName?: string,
 ): OutputSettings {
-  if (value === undefined || value === null) {
-    const base = { ...DEFAULT_OUTPUT_SETTINGS };
-    if (fallbackProjectName) {
-      base.projectName = fallbackProjectName;
-    }
-    return base;
-  }
-  const parsed = OutputSettingsSchema.parse(value);
+  const parsed = NormalizedOutputSettingsSchema.parse(value);
   if (!parsed.projectName && fallbackProjectName) {
     return { ...parsed, projectName: fallbackProjectName };
   }

@@ -1,10 +1,15 @@
+import json
+import logging
+
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.config import settings
+from app.document_normalize import DEFAULT_OUTPUT_SETTINGS
 from app.models import Base
 
+logger = logging.getLogger(__name__)
 engine = create_async_engine(settings.database_url, echo=False)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
@@ -30,3 +35,38 @@ async def init_db() -> None:
         ]
         for statement in migrations:
             await conn.execute(text(statement))
+
+        default_settings_json = json.dumps(DEFAULT_OUTPUT_SETTINGS)
+        count_result = await conn.execute(
+            text(
+                """
+                SELECT COUNT(*)::int FROM projects
+                WHERE document->'outputSettings' IS NULL
+                   OR document->'outputSettings' = 'null'::jsonb
+                   OR NOT (document ? 'outputSettings')
+                """
+            )
+        )
+        repair_count = count_result.scalar_one()
+        if repair_count and repair_count > 0:
+            await conn.execute(
+                text(
+                    """
+                    UPDATE projects
+                    SET document = jsonb_set(
+                      document,
+                      '{outputSettings}',
+                      CAST(:default_settings AS jsonb),
+                      true
+                    )
+                    WHERE document->'outputSettings' IS NULL
+                       OR document->'outputSettings' = 'null'::jsonb
+                       OR NOT (document ? 'outputSettings')
+                    """
+                ),
+                {"default_settings": default_settings_json},
+            )
+            logger.info(
+                "Repaired null or missing outputSettings on %s project(s)",
+                repair_count,
+            )
