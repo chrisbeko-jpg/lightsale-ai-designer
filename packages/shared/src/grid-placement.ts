@@ -10,6 +10,9 @@ export const GRID_PLACEMENT_CATEGORIES = [
   "downlight",
   "surface_spot",
   "panel",
+  "recessed_spot",
+  "led_panel",
+  "tracklighting",
 ] as const satisfies readonly ProductCategory[];
 
 export const DEFAULT_LAYOUT_WALL_MARGIN_METRES = 0.6;

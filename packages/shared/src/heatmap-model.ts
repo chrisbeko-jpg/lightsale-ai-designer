@@ -9,6 +9,9 @@ const MAX_INFLUENCE_RADIUS_METRES = 4.5;
 
 const FALLBACK_BEAM_ANGLE_DEGREES: Record<ProductCategory, number> = {
   downlight: 60,
+  tracklighting: 36,
+  recessed_spot: 36,
+  led_panel: 110,
   track_spot: 36,
   pendant: 90,
   panel: 110,

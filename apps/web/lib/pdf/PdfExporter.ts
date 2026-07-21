@@ -21,9 +21,14 @@ import { LIGHTSALE_LOGO_SRC } from "@/lib/brand/lightsale-logo";
 import { jsPDF } from "jspdf";
 import {
   loadImageElement,
-  loadProductThumbnailBase64,
   renderPlanToDataUrl,
 } from "./render-plan-image";
+import {
+  PDF_IMAGE_ERROR_NL,
+  prepareImageForPdf,
+  preparePngDataUrlForPdfExport,
+  validatePngDataUrl,
+} from "./prepare-image-for-pdf";
 
 export interface PdfExportDocument {
   rooms: readonly Room[];
@@ -68,6 +73,19 @@ function addPdfFooter(
   });
 }
 
+async function loadProductThumbnailPng(productId: string): Promise<string | null> {
+  const product = getProductById(productId);
+  if (!product) {
+    return null;
+  }
+  const path =
+    product.imageUrl ?? `/product-thumbnails/${product.category}.svg`;
+  const origin = globalThis.window?.location?.origin ?? "";
+  const absolute =
+    path.startsWith("http") || path.startsWith("data:") ? path : `${origin}${path}`;
+  return prepareImageForPdf(absolute, { width: 64, height: 64 });
+}
+
 function statusRgb(band: "green" | "amber" | "red" | null): [number, number, number] {
   if (band === "green") {
     return SUCCESS;
@@ -106,16 +124,15 @@ export async function exportLightingPlanPdf(
     }
   }
 
-  let logoImage: HTMLImageElement | null = null;
+  let logoPng: string | null = null;
   try {
-    logoImage = await loadImageElement(
-      `${globalThis.window?.location?.origin ?? ""}${LIGHTSALE_LOGO_SRC}`,
-    );
+    const logoSrc = `${globalThis.window?.location?.origin ?? ""}${LIGHTSALE_LOGO_SRC}`;
+    logoPng = await prepareImageForPdf(logoSrc, { width: 320, height: 90 });
   } catch {
-    logoImage = null;
+    logoPng = null;
   }
 
-  const planDataUrl = await renderPlanToDataUrl({
+  const planDataUrlRaw = await renderPlanToDataUrl({
     rooms: document.rooms,
     luminaires: document.luminaires,
     scale: document.scale,
@@ -125,12 +142,17 @@ export async function exportLightingPlanPdf(
     pixelHeight: document.floorPlanSize?.height ?? floorPlanImage?.naturalHeight ?? 0,
   });
 
+  const planDataUrl = await preparePngDataUrlForPdfExport(planDataUrlRaw);
+  if (planDataUrl === null || !validatePngDataUrl(planDataUrl)) {
+    throw new Error(PDF_IMAGE_ERROR_NL);
+  }
+
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
-  if (logoImage) {
-    doc.addImage(logoImage, "PNG", 14, 10, 32, 10);
+  if (logoPng) {
+    doc.addImage(logoPng, "PNG", 14, 10, 32, 10);
   } else {
     doc.setFontSize(14);
     doc.setTextColor(...CHARCOAL);
@@ -279,11 +301,11 @@ export async function exportLightingPlanPdf(
   let y = 28;
   doc.setFontSize(8);
   for (const row of articleList.rows) {
-    const thumb = await loadProductThumbnailBase64(row.productId);
+    const thumb = await loadProductThumbnailPng(row.productId);
     const color = getProductDisplayColor(row.productId);
     doc.setFillColor(color);
     doc.circle(16, y - 1, 2, "F");
-    if (thumb) {
+    if (thumb && validatePngDataUrl(thumb)) {
       doc.addImage(thumb, "PNG", 20, y - 6, 8, 8);
     }
     doc.setTextColor(...CHARCOAL);

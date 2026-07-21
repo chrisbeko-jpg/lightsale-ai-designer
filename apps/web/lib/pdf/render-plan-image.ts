@@ -11,6 +11,7 @@ import {
   computeContainTransform,
   getProductById,
   getProductDisplayColor,
+  drawLuminaireSymbolOnCanvas,
   metresPerPixel,
   normalizePointToPlanOrigin,
   planPointToViewport,
@@ -183,14 +184,16 @@ export function renderPlanCanvas(
     for (const luminaire of input.luminaires) {
       const center = mapPoint({ x: luminaire.x, y: luminaire.y });
       const color = getProductDisplayColor(luminaire.productId);
-      const radius = 5;
-      ctx.beginPath();
-      ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.fill();
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 1;
-      ctx.stroke();
+      drawLuminaireSymbolOnCanvas({
+        ctx,
+        luminaire,
+        centerX: center.x,
+        centerY: center.y,
+        scale: input.scale,
+        fillColor: color,
+        strokeColor: "#ffffff",
+        lineWidth: 1,
+      });
 
       if (input.settings.showLuminaireNumbers) {
         const number = positionMap.get(luminaire.id);
@@ -198,7 +201,7 @@ export function renderPlanCanvas(
           ctx.fillStyle = "#2E3135";
           ctx.font = "9px sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText(String(number), center.x, center.y + radius + 10);
+          ctx.fillText(String(number), center.x, center.y + 12);
         }
       }
     }

@@ -75,6 +75,8 @@ export {
   DEMO_PRODUCT_IDS,
   getProductById,
   getAllProducts,
+  getCatalogProducts,
+  isLegacyProduct,
 } from "./product-catalog.js";
 
 export type {
@@ -254,3 +256,24 @@ export {
   PDF_DISCLAIMER,
 } from "./pdf-export-meta.js";
 export type { PdfProjectMetadata } from "./pdf-export-meta.js";
+
+export {
+  ProductDimensionsSchema,
+  calculateLuminairePlanFootprintPx,
+  millimetresToPlanPixels,
+  hitRadiusPlanPx,
+  formatProductDimensionsLabel,
+  MIN_LUMINAIRE_HIT_RADIUS_SCREEN_PX,
+} from "./product-dimensions.js";
+export type { LuminairePlanFootprintPx, ProductDimensions } from "./product-dimensions.js";
+
+export { drawLuminaireSymbolOnCanvas } from "./luminaire-symbol-draw.js";
+
+export {
+  PNG_DATA_URL_PREFIX,
+  detectImageMimeTypeFromDataUrl,
+  validatePngDataUrl,
+  detectImageMimeTypeFromBytes,
+} from "./pdf-image-prep.js";
+
+export { WL_LIGHTING_PRODUCTS, WL_PRODUCT_IDS } from "./wl-products.js";

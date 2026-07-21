@@ -1,7 +1,12 @@
 import { z } from "zod";
+import { ProductDimensionsSchema } from "./product-dimensions.js";
+import { WL_LIGHTING_PRODUCTS } from "./wl-products.js";
 
 export const PRODUCT_CATEGORIES = [
   "downlight",
+  "tracklighting",
+  "recessed_spot",
+  "led_panel",
   "surface_spot",
   "track_spot",
   "pendant",
@@ -19,6 +24,7 @@ export const MOUNTING_TYPES = [
   "pendant",
   "panel",
   "linear",
+  "recessed_grid",
 ] as const;
 
 export const MountingTypeSchema = z.enum(MOUNTING_TYPES);
@@ -34,21 +40,27 @@ export const LightingProductSchema = z.object({
   mountingTypes: z.array(MountingTypeSchema).min(1),
   suitableRoomTypes: z.array(z.string().min(1)).min(1),
   suitableStylePresets: z.array(z.string().min(1)).min(1),
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.string().min(1).optional(),
   articleNumber: z.string().min(1).optional(),
   categoryIcon: z.string().min(1).optional(),
   colourTemperatureKelvin: z.number().positive().optional(),
   beamAngleDegrees: z.number().positive().optional(),
+  dimensions: ProductDimensionsSchema.optional(),
+  legacy: z.boolean().optional(),
+  dimmingType: z.string().optional(),
+  cri: z.string().optional(),
+  adjustable: z.boolean().optional(),
 });
 
 export type LightingProduct = z.infer<typeof LightingProductSchema>;
 
-export const DEMO_LIGHTING_PRODUCTS: LightingProduct[] = [
+const LEGACY_LIGHTING_PRODUCTS: LightingProduct[] = [
   {
     id: "demo-downlight-evo-12w",
     name: "Evo LED Downlight 12W",
     brand: "Lightsale Demo",
     category: "downlight",
+    legacy: true,
     luminousFluxLumens: 1100,
     powerWatts: 12,
     mountingTypes: ["recessed"],
@@ -71,6 +83,7 @@ export const DEMO_LIGHTING_PRODUCTS: LightingProduct[] = [
     name: "Surface Spot Pro 18W",
     brand: "Lightsale Demo",
     category: "surface_spot",
+    legacy: true,
     luminousFluxLumens: 1600,
     powerWatts: 18,
     mountingTypes: ["surface"],
@@ -212,14 +225,31 @@ export const DEMO_LIGHTING_PRODUCTS: LightingProduct[] = [
   },
 ];
 
+export const ALL_LIGHTING_PRODUCTS: LightingProduct[] = [
+  ...(WL_LIGHTING_PRODUCTS as unknown as LightingProduct[]),
+  ...LEGACY_LIGHTING_PRODUCTS.map((product) => ({ ...product, legacy: true })),
+];
+
+/** Includes WL catalogue and legacy demo products for lookup. */
+export const DEMO_LIGHTING_PRODUCTS = ALL_LIGHTING_PRODUCTS;
+
 export const DEMO_PRODUCT_IDS = new Set(
-  DEMO_LIGHTING_PRODUCTS.map((product) => product.id),
+  ALL_LIGHTING_PRODUCTS.map((product) => product.id),
 );
 
 export function getProductById(productId: string): LightingProduct | undefined {
-  return DEMO_LIGHTING_PRODUCTS.find((product) => product.id === productId);
+  return ALL_LIGHTING_PRODUCTS.find((product) => product.id === productId);
 }
 
 export function getAllProducts(): readonly LightingProduct[] {
-  return DEMO_LIGHTING_PRODUCTS;
+  return ALL_LIGHTING_PRODUCTS;
+}
+
+export function getCatalogProducts(): readonly LightingProduct[] {
+  return WL_LIGHTING_PRODUCTS as unknown as LightingProduct[];
+}
+
+export function isLegacyProduct(productId: string): boolean {
+  const product = getProductById(productId);
+  return product?.legacy === true;
 }

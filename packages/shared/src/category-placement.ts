@@ -333,7 +333,10 @@ export function generateCategoryPlacementPoints(
   if (
     category === "downlight" ||
     category === "surface_spot" ||
-    category === "panel"
+    category === "panel" ||
+    category === "recessed_spot" ||
+    category === "led_panel" ||
+    category === "tracklighting"
   ) {
     const grid = generateGridPlacementPoints({
       room: input.room,

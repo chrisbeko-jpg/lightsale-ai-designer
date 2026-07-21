@@ -32,6 +32,14 @@ class ProjectRow(Base):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+    owner_id: Mapped[str] = mapped_column(String(128), nullable=False, default="local")
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    deleted_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    deletion_scheduled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class FloorPlanRow(Base):

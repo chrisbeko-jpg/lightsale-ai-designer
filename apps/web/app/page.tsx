@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { listProjects } from "@/lib/api/projects";
 import { CreateProjectForm } from "@/components/CreateProjectForm";
-import { ProjectList } from "@/components/ProjectList";
+import { ProjectManagement } from "@/components/ProjectManagement";
 
 export default async function HomePage() {
   const projects = await listProjects().catch(() => []);
@@ -24,11 +24,11 @@ export default async function HomePage() {
 
       <section className="space-y-4">
         <h2 className="text-lg font-medium">Projects</h2>
-        <ProjectList projects={projects} />
+        <ProjectManagement initialProjects={projects} />
       </section>
 
       <footer className="text-sm text-[var(--muted)]">
-        <Link href="/" className="hover:text-white">
+        <Link href="/" className="hover:text-[var(--foreground)]">
           Lightsale AI Designer
         </Link>
       </footer>

@@ -5,7 +5,7 @@ import type { ProductCategory, Room, RoomPropertyPatch } from "@lightsale/shared
 import {
   PRODUCT_CATEGORIES,
   filterCompatibleProducts,
-  getAllProducts,
+  getCatalogProducts,
   productCategoryLabel,
 } from "@lightsale/shared";
 import { fieldClassName, labelClassName } from "./editor-form-styles";
@@ -23,7 +23,7 @@ export function ProductBrowser({ room, onPatch }: ProductBrowserProps) {
   );
 
   const products = useMemo(() => {
-    const compatible = filterCompatibleProducts(getAllProducts(), room);
+    const compatible = filterCompatibleProducts(getCatalogProducts(), room);
     const normalizedQuery = query.trim().toLowerCase();
     return compatible.filter((product) => {
       if (categoryFilter !== "all" && product.category !== categoryFilter) {

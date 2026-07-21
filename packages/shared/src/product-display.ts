@@ -2,11 +2,26 @@ import type { LightingProduct, ProductCategory } from "./product-catalog.js";
 
 export const PRODUCT_CATEGORY_LABELS: Record<ProductCategory, string> = {
   downlight: "Downlight",
+  tracklighting: "Tracklighting",
+  recessed_spot: "Inbouwspot",
+  led_panel: "LED panel",
   surface_spot: "Surface mounted",
   track_spot: "Track spot",
   pendant: "Pendant",
   panel: "Panel",
   linear: "Linear profile",
+};
+
+const THUMBNAIL_CATEGORY: Record<ProductCategory, string> = {
+  downlight: "downlight",
+  tracklighting: "track_spot",
+  recessed_spot: "surface_spot",
+  led_panel: "panel",
+  surface_spot: "surface_spot",
+  track_spot: "track_spot",
+  pendant: "pendant",
+  panel: "panel",
+  linear: "linear",
 };
 
 export function productCategoryLabel(category: ProductCategory): string {
@@ -15,7 +30,7 @@ export function productCategoryLabel(category: ProductCategory): string {
 
 /** Default thumbnail when no product imageUrl is set. */
 export function defaultProductThumbnailPath(category: ProductCategory): string {
-  return `/product-thumbnails/${category}.svg`;
+  return `/product-thumbnails/${THUMBNAIL_CATEGORY[category]}.svg`;
 }
 
 export function resolveProductThumbnailUrl(

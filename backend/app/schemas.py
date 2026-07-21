@@ -224,6 +224,19 @@ class ProjectListItem(BaseModel):
     createdAt: datetime
     updatedAt: datetime
     hasFloorPlan: bool
+    customerName: str = ""
+    roomCount: int = 0
+    luminaireCount: int = 0
+
+
+class RenameProjectRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+
+
+class ProjectTrashStats(BaseModel):
+    activeProjectCount: int
+    trashProjectCount: int
+    totalUploadedBytes: int | None = None
 
 
 def default_document() -> dict[str, Any]:
