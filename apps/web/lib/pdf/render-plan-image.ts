@@ -2,16 +2,23 @@ import type {
   Luminaire,
   OutputSettings,
   Room,
+  RoomHeatmapData,
   ScaleCalibration,
 } from "@lightsale/shared";
 import {
   assignLuminairePositionNumbers,
+  buildProjectHeatmapData,
+  computeContainTransform,
   getProductById,
   getProductDisplayColor,
   metresPerPixel,
+  normalizePointToPlanOrigin,
+  planPointToViewport,
   polygonAreaSquareMetres,
   formatAreaSquareMetres,
+  resolvePlanSourceDimensions,
 } from "@lightsale/shared";
+import { drawLightIndicatorHeatmap } from "../heatmap/draw-light-indicator";
 
 export interface PlanRenderInput {
   rooms: readonly Room[];
@@ -23,84 +30,103 @@ export interface PlanRenderInput {
   pixelHeight: number;
 }
 
-function contentBounds(
-  rooms: readonly Room[],
-  luminaires: readonly Luminaire[],
-): { minX: number; minY: number; maxX: number; maxY: number } {
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  const add = (x: number, y: number) => {
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
-    maxX = Math.max(maxX, x);
-    maxY = Math.max(maxY, y);
-  };
-  for (const room of rooms) {
-    for (const vertex of room.vertices) {
-      add(vertex.x, vertex.y);
-    }
-  }
-  for (const luminaire of luminaires) {
-    add(luminaire.x, luminaire.y);
-  }
-  if (!Number.isFinite(minX)) {
-    return { minX: 0, minY: 0, maxX: pixelFallback(), maxY: pixelFallback() };
-  }
-  return { minX, minY, maxX, maxY };
+export interface PlanRenderLayout {
+  canvasWidth: number;
+  canvasHeight: number;
+  planAreaX: number;
+  planAreaY: number;
+  planAreaWidth: number;
+  planAreaHeight: number;
 }
 
-function pixelFallback(): number {
-  return 800;
-}
-
-export async function renderPlanToDataUrl(
+export function renderPlanCanvas(
+  ctx: CanvasRenderingContext2D,
   input: PlanRenderInput,
-): Promise<string> {
-  const canvas = document.createElement("canvas");
-  const width = 1600;
-  const height = 1100;
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    throw new Error("Canvas not supported");
-  }
+  layout: PlanRenderLayout,
+  options?: { heatmap?: boolean },
+): void {
+  const { canvasWidth, canvasHeight, planAreaX, planAreaY, planAreaWidth, planAreaHeight } =
+    layout;
 
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, width, height);
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-  const bounds = contentBounds(input.rooms, input.luminaires);
-  const contentW = Math.max(bounds.maxX - bounds.minX, 1);
-  const contentH = Math.max(bounds.maxY - bounds.minY, 1);
-  const pad = Math.max(contentW, contentH) * 0.08;
-  const drawW = width * 0.88;
-  const drawH = height * 0.72;
-  const scaleFit = Math.min(drawW / (contentW + pad * 2), drawH / (contentH + pad * 2));
-  const offsetX = (width - (contentW + pad * 2) * scaleFit) / 2 - (bounds.minX - pad) * scaleFit;
-  const offsetY = (height - (contentH + pad * 2) * scaleFit) / 2 - (bounds.minY - pad) * scaleFit;
-
-  const toScreen = (x: number, y: number) => ({
-    x: x * scaleFit + offsetX,
-    y: y * scaleFit + offsetY,
+  const source = resolvePlanSourceDimensions({
+    floorPlanWidthPx:
+      input.pixelWidth > 0 ? input.pixelWidth : input.floorPlanImage?.naturalWidth ?? null,
+    floorPlanHeightPx:
+      input.pixelHeight > 0
+        ? input.pixelHeight
+        : input.floorPlanImage?.naturalHeight ?? null,
+    rooms: input.rooms,
+    luminaires: input.luminaires,
   });
 
-  if (
-    input.settings.showFloorPlanBackground &&
-    input.floorPlanImage !== null
-  ) {
-    const img = input.floorPlanImage;
-    const imgW = input.pixelWidth || img.naturalWidth;
-    const imgH = input.pixelHeight || img.naturalHeight;
-    const topLeft = toScreen(0, 0);
+  const transform = computeContainTransform(
+    source.width,
+    source.height,
+    planAreaWidth,
+    planAreaHeight,
+  );
+  transform.offsetX += planAreaX;
+  transform.offsetY += planAreaY;
+
+  const mapPoint = (point: { x: number; y: number }) => {
+    const normalized = normalizePointToPlanOrigin(point, source);
+    return planPointToViewport(normalized, transform);
+  };
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(planAreaX, planAreaY, planAreaWidth, planAreaHeight);
+  ctx.clip();
+
+  const showHeatmap =
+    options?.heatmap ??
+    (input.settings.includeLightIndicatorInPdf || input.settings.showLightIndicator);
+
+  if (input.settings.showFloorPlanBackground && input.floorPlanImage !== null) {
+    const topLeft = mapPoint({ x: 0, y: 0 });
+    const bottomRight = mapPoint({ x: source.width, y: source.height });
     ctx.drawImage(
-      img,
+      input.floorPlanImage,
       topLeft.x,
       topLeft.y,
-      imgW * scaleFit,
-      imgH * scaleFit,
+      bottomRight.x - topLeft.x,
+      bottomRight.y - topLeft.y,
     );
+  }
+
+  if (showHeatmap && input.scale !== null) {
+    const layerCanvas = document.createElement("canvas");
+    layerCanvas.width = Math.ceil(source.width);
+    layerCanvas.height = Math.ceil(source.height);
+    const layerCtx = layerCanvas.getContext("2d");
+    if (layerCtx) {
+      const mpp = metresPerPixel(input.scale);
+      const roomData = buildProjectHeatmapData({
+        rooms: input.rooms,
+        luminaires: input.luminaires,
+        productLookup: getProductById,
+        metresPerPixel: mpp,
+      });
+      drawLightIndicatorHeatmap(
+        layerCtx,
+        roomData,
+        layerCanvas.width,
+        layerCanvas.height,
+        6,
+      );
+      const topLeft = mapPoint({ x: 0, y: 0 });
+      const bottomRight = mapPoint({ x: source.width, y: source.height });
+      ctx.drawImage(
+        layerCanvas,
+        topLeft.x,
+        topLeft.y,
+        bottomRight.x - topLeft.x,
+        bottomRight.y - topLeft.y,
+      );
+    }
   }
 
   if (input.settings.showRoomOutlines) {
@@ -109,16 +135,16 @@ export async function renderPlanToDataUrl(
         continue;
       }
       ctx.beginPath();
-      const first = toScreen(room.vertices[0]!.x, room.vertices[0]!.y);
+      const first = mapPoint(room.vertices[0]!);
       ctx.moveTo(first.x, first.y);
       for (let index = 1; index < room.vertices.length; index += 1) {
-        const point = toScreen(room.vertices[index]!.x, room.vertices[index]!.y);
+        const point = mapPoint(room.vertices[index]!);
         ctx.lineTo(point.x, point.y);
       }
       ctx.closePath();
-      ctx.fillStyle = "rgba(100, 116, 139, 0.15)";
+      ctx.fillStyle = "rgba(107, 114, 128, 0.12)";
       ctx.fill();
-      ctx.strokeStyle = "#475569";
+      ctx.strokeStyle = "#6B7280";
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
@@ -129,8 +155,8 @@ export async function renderPlanToDataUrl(
         );
         const cx = centroid.x / room.vertices.length;
         const cy = centroid.y / room.vertices.length;
-        const labelPoint = toScreen(cx, cy);
-        ctx.fillStyle = "#1e293b";
+        const labelPoint = mapPoint({ x: cx, y: cy });
+        ctx.fillStyle = "#2E3135";
         ctx.font = "12px sans-serif";
         ctx.textAlign = "center";
         const areaLabel =
@@ -155,7 +181,7 @@ export async function renderPlanToDataUrl(
 
   if (input.settings.showLuminaireSymbols) {
     for (const luminaire of input.luminaires) {
-      const center = toScreen(luminaire.x, luminaire.y);
+      const center = mapPoint({ x: luminaire.x, y: luminaire.y });
       const color = getProductDisplayColor(luminaire.productId);
       const radius = 5;
       ctx.beginPath();
@@ -169,7 +195,7 @@ export async function renderPlanToDataUrl(
       if (input.settings.showLuminaireNumbers) {
         const number = positionMap.get(luminaire.id);
         if (number !== undefined) {
-          ctx.fillStyle = "#0f172a";
+          ctx.fillStyle = "#2E3135";
           ctx.font = "9px sans-serif";
           ctx.textAlign = "center";
           ctx.fillText(String(number), center.x, center.y + radius + 10);
@@ -182,20 +208,45 @@ export async function renderPlanToDataUrl(
     const mpp = metresPerPixel(input.scale);
     const barPx = 100;
     const barMetres = barPx * mpp;
-    const barScreen = barPx * scaleFit;
-    const x = width * 0.08;
-    const y = height * 0.92;
-    ctx.strokeStyle = "#0f172a";
+    const barScreen = barPx * transform.scale;
+    const x = planAreaX + 16;
+    const y = planAreaY + planAreaHeight - 16;
+    ctx.strokeStyle = "#2E3135";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x + barScreen, y);
     ctx.stroke();
     ctx.font = "11px sans-serif";
-    ctx.fillStyle = "#0f172a";
+    ctx.fillStyle = "#2E3135";
     ctx.textAlign = "left";
     ctx.fillText(`${barMetres.toFixed(1)} m`, x, y - 6);
   }
+
+  ctx.restore();
+}
+
+export async function renderPlanToDataUrl(
+  input: PlanRenderInput,
+): Promise<string> {
+  const canvas = document.createElement("canvas");
+  const canvasWidth = 1600;
+  const canvasHeight = 1100;
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Canvas not supported");
+  }
+
+  renderPlanCanvas(ctx, input, {
+    canvasWidth,
+    canvasHeight,
+    planAreaX: canvasWidth * 0.06,
+    planAreaY: canvasHeight * 0.12,
+    planAreaWidth: canvasWidth * 0.88,
+    planAreaHeight: canvasHeight * 0.78,
+  }, { heatmap: input.settings.includeLightIndicatorInPdf });
 
   return canvas.toDataURL("image/png");
 }
@@ -237,3 +288,5 @@ export async function loadProductThumbnailBase64(
     return null;
   }
 }
+
+export type { RoomHeatmapData };

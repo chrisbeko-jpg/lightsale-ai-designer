@@ -15,6 +15,10 @@ export const OutputSettingsSchema = z.object({
   showLuminaireNumbers: z.boolean().default(false),
   showScale: z.boolean().default(true),
   showLegend: z.boolean().default(true),
+  showLightIndicator: z.boolean().default(false),
+  includeLightIndicatorInPdf: z.boolean().default(false),
+  showLuxSummary: z.boolean().default(true),
+  showComplianceStatus: z.boolean().default(true),
 });
 
 export type OutputSettings = z.infer<typeof OutputSettingsSchema>;

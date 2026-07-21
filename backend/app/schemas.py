@@ -183,6 +183,10 @@ class OutputSettingsModel(BaseModel):
     showLuminaireNumbers: bool = False
     showScale: bool = True
     showLegend: bool = True
+    showLightIndicator: bool = False
+    includeLightIndicatorInPdf: bool = False
+    showLuxSummary: bool = True
+    showComplianceStatus: bool = True
 
 
 class ProjectDocumentModel(BaseModel):

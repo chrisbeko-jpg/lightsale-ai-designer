@@ -7,6 +7,7 @@ import type { Point } from "@lightsale/shared";
 import { screenToCanvas } from "@lightsale/shared";
 import { useEditorStore } from "@/lib/editor/store";
 import { FloorPlanLayer } from "./FloorPlanLayer";
+import { LightIndicatorLayer } from "./LightIndicatorLayer";
 import { LuminaireSymbol, useLuminairePositionNumberMap } from "./LuminaireSymbol";
 import { RoomPolygon } from "./RoomPolygon";
 import { ScaleOverlay } from "./ScaleOverlay";
@@ -168,6 +169,8 @@ export function FloorPlanCanvas({ width, height }: FloorPlanCanvasProps) {
         {floorPlanUrl ? (
           <FloorPlanLayer url={floorPlanUrl} mimeType={floorPlanMimeType} />
         ) : null}
+
+        <LightIndicatorLayer width={width} height={height} />
 
         {rooms.map((room) => (
           <RoomPolygon

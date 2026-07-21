@@ -134,6 +134,49 @@ export {
 export type { PlacementPoint } from "./category-placement.js";
 
 export {
+  computeContainTransform,
+  planPointToViewport,
+  aspectRatiosMatch,
+  renderedPlanSize,
+  resolvePlanSourceDimensions,
+  normalizePointToPlanOrigin,
+  contentBoundsFromGeometry,
+} from "./plan-viewport.js";
+export type { PlanViewportTransform, PlanSourceDimensions } from "./plan-viewport.js";
+
+export {
+  INDICATIVE_LUX_DISCLAIMER_NL,
+  INDICATIVE_LUX_PDF_DISCLAIMER_NL,
+  calculateEffectiveLumens,
+  luminairesInsideRoom,
+  calculateRoomActualEffectiveLumens,
+  calculateIndicativeAverageLux,
+  calculateLuxCompliance,
+  calculateProjectLightingSummary,
+  countLuminairesOutsideAllRooms,
+} from "./indicative-lux.js";
+export type {
+  LuxComplianceResult,
+  LuxComplianceBand,
+  RoomLightingPerformance,
+  ProjectLightingSummary,
+} from "./indicative-lux.js";
+
+export {
+  resolveBeamAngleDegrees,
+  calculateIndicativeInfluenceRadiusMetres,
+  calculateIndicativeInfluenceRadiusPx,
+  relativeIntensityAtDistance,
+  buildHeatmapDataForRoom,
+  buildProjectHeatmapData,
+  sampleHeatmapIntensityAtPoint,
+} from "./heatmap-model.js";
+export type {
+  HeatmapLuminaireContribution,
+  RoomHeatmapData,
+} from "./heatmap-model.js";
+
+export {
   validateLayoutGeneration,
   validateManualLuminairePlacement,
 } from "./layout-validation.js";

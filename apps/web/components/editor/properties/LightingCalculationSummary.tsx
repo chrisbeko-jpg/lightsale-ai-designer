@@ -57,29 +57,29 @@ export function LightingCalculationSummary({
       <h4 className={subsectionTitleClassName}>Calculation summary</h4>
       <dl className="grid grid-cols-2 gap-x-2 gap-y-1">
         <dt className="text-[var(--muted)]">Required lumens</dt>
-        <dd className="text-right font-medium text-white">
+        <dd className="text-right font-medium text-[var(--foreground)]">
           {requiredLumens !== null
             ? `${formatRequiredLumens(requiredLumens)} lm`
             : "—"}
         </dd>
         <dt className="text-[var(--muted)]">Effective lumens</dt>
-        <dd className="text-right font-medium text-white">
+        <dd className="text-right font-medium text-[var(--foreground)]">
           {estimate.effectiveLumensPerLuminaire !== null
             ? `${Math.round(estimate.effectiveLumensPerLuminaire)} lm`
             : "—"}
         </dd>
         <dt className="text-[var(--muted)]">Calculated quantity</dt>
-        <dd className="text-right font-medium text-white">
+        <dd className="text-right font-medium text-[var(--foreground)]">
           {estimate.quantity ?? "—"}
         </dd>
         <dt className="text-[var(--muted)]">Placed quantity</dt>
-        <dd className="text-right font-medium text-white">{placedCount}</dd>
+        <dd className="text-right font-medium text-[var(--foreground)]">{placedCount}</dd>
         <dt className="text-[var(--muted)]">Difference</dt>
         <dd
           className={`text-right font-medium ${
             quantityDifference !== null && quantityDifference !== 0
-              ? "text-amber-400"
-              : "text-white"
+              ? "text-[var(--warning)]"
+              : "text-[var(--foreground)]"
           }`}
         >
           {quantityDifference === null
@@ -89,13 +89,13 @@ export function LightingCalculationSummary({
               : quantityDifference}
         </dd>
         <dt className="text-[var(--muted)]">Installed wattage</dt>
-        <dd className="text-right font-medium text-white">
+        <dd className="text-right font-medium text-[var(--foreground)]">
           {placedCount > 0 ? `${Math.round(placedWattage)} W` : "—"}
         </dd>
         <dt className="text-[var(--muted)]">Outside room</dt>
         <dd
           className={`text-right font-medium ${
-            outsideCount > 0 ? "text-red-400" : "text-white"
+            outsideCount > 0 ? "text-[var(--error)]" : "text-[var(--foreground)]"
           }`}
         >
           {outsideCount}

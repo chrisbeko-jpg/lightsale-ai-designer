@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { LightsaleLogo } from "@/components/brand/LightsaleLogo";
 import {
   floorPlanFileUrl,
   getProject,
@@ -128,10 +129,16 @@ export function ProjectEditor({ projectId }: ProjectEditorProps) {
     <div className="flex h-screen max-h-screen flex-col overflow-hidden">
       <header className="flex shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--panel)] px-4 py-3">
         <div className="flex items-center gap-4">
-          <Link href="/" className="text-sm text-[var(--muted)] hover:text-white">
+          <LightsaleLogo className="hidden h-8 w-auto sm:block" width={100} height={28} />
+          <Link
+            href="/"
+            className="text-sm text-[var(--muted)] hover:text-[var(--foreground)]"
+          >
             ← Projects
           </Link>
-          <h1 className="font-medium">{projectName || "Loading…"}</h1>
+          <h1 className="font-medium text-[var(--charcoal)]">
+            {projectName || "Loading…"}
+          </h1>
           {isDirty ? (
             <span className="text-xs text-amber-400">Unsaved changes</span>
           ) : null}
@@ -140,7 +147,7 @@ export function ProjectEditor({ projectId }: ProjectEditorProps) {
           type="button"
           onClick={() => void handleSave()}
           disabled={isSaving || !isDirty}
-          className="rounded-lg bg-[var(--accent)] px-4 py-1.5 text-sm text-white disabled:opacity-40"
+          className="rounded-lg bg-[var(--accent)] px-4 py-1.5 text-sm font-medium text-[var(--charcoal)] disabled:opacity-40"
         >
           {isSaving ? "Saving…" : "Save"}
         </button>

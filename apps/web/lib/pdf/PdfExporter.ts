@@ -5,19 +5,19 @@ import type {
   ScaleCalibration,
 } from "@lightsale/shared";
 import {
-  PDF_DISCLAIMER,
   buildArticleList,
   buildLightingPlanPdfFilename,
   buildProductLegend,
-  countLuminairesForRoom,
+  calculateProjectLightingSummary,
   extractPdfProjectMetadata,
   formatAreaSquareMetres,
-  getEffectiveTargetLux,
   getProductById,
   getProductDisplayColor,
-  polygonAreaSquareMetres,
+  INDICATIVE_LUX_DISCLAIMER_NL,
+  INDICATIVE_LUX_PDF_DISCLAIMER_NL,
 } from "@lightsale/shared";
 import { roomTypeLabel } from "@/lib/room-property-labels";
+import { LIGHTSALE_LOGO_SRC } from "@/lib/brand/lightsale-logo";
 import { jsPDF } from "jspdf";
 import {
   loadImageElement,
@@ -35,6 +35,13 @@ export interface PdfExportDocument {
   floorPlanSize: { width: number; height: number } | null;
 }
 
+const CHARCOAL: [number, number, number] = [46, 49, 53];
+const MUTED: [number, number, number] = [107, 114, 128];
+const SUCCESS: [number, number, number] = [46, 139, 87];
+const WARNING: [number, number, number] = [217, 119, 6];
+const ERROR: [number, number, number] = [192, 57, 43];
+const ACCENT: [number, number, number] = [242, 201, 76];
+
 function addPdfFooter(
   doc: jsPDF,
   meta: ReturnType<typeof extractPdfProjectMetadata>,
@@ -43,15 +50,35 @@ function addPdfFooter(
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  doc.setFontSize(8);
-  doc.setTextColor(100);
-  doc.text(meta.projectName, 14, pageHeight - 8);
-  doc.text(meta.outputDate || new Date().toISOString().slice(0, 10), pageWidth / 2, pageHeight - 8, {
-    align: "center",
-  });
-  doc.text(`Page ${pageNumber} / ${totalPages}`, pageWidth - 14, pageHeight - 8, {
+  doc.setFontSize(7);
+  doc.setTextColor(...MUTED);
+  doc.text("Lightsale", 14, pageHeight - 10);
+  doc.text(meta.projectName, 14, pageHeight - 6);
+  doc.text(
+    meta.outputDate || new Date().toISOString().slice(0, 10),
+    pageWidth / 2,
+    pageHeight - 8,
+    { align: "center" },
+  );
+  doc.text(`Pagina ${pageNumber} / ${totalPages}`, pageWidth - 14, pageHeight - 8, {
     align: "right",
   });
+  doc.text(INDICATIVE_LUX_PDF_DISCLAIMER_NL, 14, pageHeight - 4, {
+    maxWidth: pageWidth - 28,
+  });
+}
+
+function statusRgb(band: "green" | "amber" | "red" | null): [number, number, number] {
+  if (band === "green") {
+    return SUCCESS;
+  }
+  if (band === "amber") {
+    return WARNING;
+  }
+  if (band === "red") {
+    return ERROR;
+  }
+  return MUTED;
 }
 
 export async function exportLightingPlanPdf(
@@ -64,6 +91,11 @@ export async function exportLightingPlanPdf(
   const filename = buildLightingPlanPdfFilename(meta.projectName);
   const articleList = buildArticleList(document.luminaires, document.rooms);
   const legend = buildProductLegend(document.luminaires.map((l) => l.productId));
+  const lightingSummary = calculateProjectLightingSummary({
+    rooms: document.rooms,
+    luminaires: document.luminaires,
+    scale: document.scale,
+  });
 
   let floorPlanImage: HTMLImageElement | null = null;
   if (document.floorPlanUrl) {
@@ -72,6 +104,15 @@ export async function exportLightingPlanPdf(
     } catch {
       floorPlanImage = null;
     }
+  }
+
+  let logoImage: HTMLImageElement | null = null;
+  try {
+    logoImage = await loadImageElement(
+      `${globalThis.window?.location?.origin ?? ""}${LIGHTSALE_LOGO_SRC}`,
+    );
+  } catch {
+    logoImage = null;
   }
 
   const planDataUrl = await renderPlanToDataUrl({
@@ -88,63 +129,155 @@ export async function exportLightingPlanPdf(
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
-  doc.setFontSize(18);
-  doc.setTextColor(15, 23, 42);
-  doc.text("Lightsale", 14, 16);
-  doc.setFontSize(14);
-  doc.text(meta.projectName, 14, 24);
+  if (logoImage) {
+    doc.addImage(logoImage, "PNG", 14, 10, 32, 10);
+  } else {
+    doc.setFontSize(14);
+    doc.setTextColor(...CHARCOAL);
+    doc.text("Lightsale", 14, 16);
+  }
+
+  doc.setFillColor(...ACCENT);
+  doc.rect(14, 22, pageW - 28, 1.2, "F");
+
+  doc.setFontSize(16);
+  doc.setTextColor(...CHARCOAL);
+  doc.text(meta.projectName, 14, 30);
 
   doc.setFontSize(9);
-  let infoY = 32;
+  doc.setTextColor(...MUTED);
+  let infoY = 36;
   const infoLines: string[] = [];
   if (meta.customerName) {
-    infoLines.push(`Customer: ${meta.customerName}`);
-  }
-  if (meta.projectReference) {
-    infoLines.push(`Reference: ${meta.projectReference}`);
+    infoLines.push(`Klant: ${meta.customerName}`);
   }
   if (meta.projectAddress) {
-    infoLines.push(`Address: ${meta.projectAddress}`);
+    infoLines.push(`Adres: ${meta.projectAddress}`);
+  }
+  if (meta.projectReference) {
+    infoLines.push(`Referentie: ${meta.projectReference}`);
   }
   if (meta.designerName) {
-    infoLines.push(`Designer: ${meta.designerName}`);
+    infoLines.push(`Ontwerper: ${meta.designerName}`);
   }
-  infoLines.push(`Date: ${meta.outputDate || new Date().toISOString().slice(0, 10)}`);
+  infoLines.push(`Datum: ${meta.outputDate || new Date().toISOString().slice(0, 10)}`);
   for (const line of infoLines) {
     doc.text(line, 14, infoY);
-    infoY += 5;
+    infoY += 4.5;
   }
 
-  const planTop = Math.max(infoY + 4, 48);
-  const planHeight = pageH - planTop - 36;
-  const planWidth = pageW - 80;
-  doc.addImage(planDataUrl, "PNG", 14, planTop, planWidth, planHeight);
+  doc.setFontSize(8);
+  doc.text(
+    `Ruimtes: ${document.rooms.length} · Armaturen: ${lightingSummary.totalLuminaires} · ${Math.round(lightingSummary.totalInstalledWattage)} W · Doel gehaald: ${lightingSummary.roomsMeetingTarget}/${lightingSummary.roomsMeetingTarget + lightingSummary.roomsNotMeetingTarget}`,
+    14,
+    infoY + 2,
+  );
+
+  const planTop = infoY + 8;
+  const planHeight = pageH - planTop - 22;
+  const planWidth = pageW - 28;
+  const canvasAspect = 1600 / 1100;
+  const boxAspect = planWidth / planHeight;
+  let drawW = planWidth;
+  let drawH = planHeight;
+  let drawX = 14;
+  let drawY = planTop;
+  if (boxAspect > canvasAspect) {
+    drawH = planWidth / canvasAspect;
+    drawY = planTop + (planHeight - drawH) / 2;
+  } else {
+    drawW = planHeight * canvasAspect;
+    drawX = 14 + (planWidth - drawW) / 2;
+  }
+  doc.addImage(planDataUrl, "PNG", drawX, drawY, drawW, drawH);
 
   if (document.outputSettings.showLegend && legend.length > 0) {
-    let legendY = planTop;
-    doc.setFontSize(9);
-    doc.text("Legend", pageW - 62, legendY);
-    legendY += 5;
-    for (const entry of legend.slice(0, 12)) {
+    let legendY = planTop + 4;
+    doc.setFontSize(8);
+    doc.setTextColor(...CHARCOAL);
+    doc.text("Legenda", pageW - 52, legendY);
+    legendY += 4;
+    for (const entry of legend.slice(0, 10)) {
       doc.setFillColor(entry.color);
-      doc.circle(pageW - 60, legendY - 1.5, 1.5, "F");
-      doc.setTextColor(30, 41, 59);
-      doc.text(entry.label.slice(0, 28), pageW - 56, legendY);
-      legendY += 5;
+      doc.circle(pageW - 50, legendY - 1.2, 1.4, "F");
+      doc.setTextColor(...CHARCOAL);
+      doc.text(entry.label.slice(0, 24), pageW - 47, legendY);
+      legendY += 4;
     }
   }
 
-  doc.setFontSize(7);
-  doc.setTextColor(100);
-  doc.text(PDF_DISCLAIMER, 14, pageH - 14, { maxWidth: pageW - 28 });
+  if (document.outputSettings.includeLightIndicatorInPdf) {
+    doc.setFontSize(7);
+    doc.setTextColor(...MUTED);
+    doc.text(
+      "Light Indicator: paars = hoogste indicatieve concentratie · rood = laag · geen kleur = weinig bijdrage (indicatief, geen uniformiteit)",
+      14,
+      pageH - 18,
+      { maxWidth: pageW - 28 },
+    );
+  }
+
+  doc.addPage("a4", "portrait");
+  let ry = 18;
+  doc.setFontSize(16);
+  doc.setTextColor(...CHARCOAL);
+  doc.text("Ruimteprestaties", 14, ry);
+  ry += 8;
+  doc.setFontSize(8);
+  doc.setTextColor(...MUTED);
+  doc.text(
+    "Indicatieve gemiddelde lux = totaal effectieve lumen / ruimteoppervlak.",
+    14,
+    ry,
+  );
+  ry += 6;
+  doc.text(INDICATIVE_LUX_DISCLAIMER_NL, 14, ry, { maxWidth: pageW - 28 });
+  ry += 10;
+
+  const portraitH = doc.internal.pageSize.getHeight();
+  for (const roomPerf of lightingSummary.rooms) {
+    if (roomPerf.placedQuantityInsideRoom === 0) {
+      continue;
+    }
+    const room = document.rooms.find((item) => item.id === roomPerf.roomId);
+    if (ry > portraitH - 40) {
+      doc.addPage("a4", "portrait");
+      ry = 18;
+    }
+    doc.setFillColor(...statusRgb(roomPerf.compliance.band));
+    doc.rect(14, ry - 4, 2, 14, "F");
+    doc.setFontSize(11);
+    doc.setTextColor(...CHARCOAL);
+    doc.text(roomPerf.roomName, 18, ry);
+    ry += 5;
+    doc.setFontSize(8);
+    doc.setTextColor(...MUTED);
+    doc.text(
+      `Type: ${room ? roomTypeLabel(room.roomType) : "—"} · Oppervlak: ${
+        roomPerf.areaSquareMetres !== null
+          ? formatAreaSquareMetres(roomPerf.areaSquareMetres)
+          : "—"
+      }`,
+      18,
+      ry,
+    );
+    ry += 4;
+    doc.text(
+      `Doel: ${roomPerf.targetLux} lx · Geplaatst: ${roomPerf.placedQuantityInsideRoom} · ${Math.round(roomPerf.totalInstalledWattage)} W · Indicatief gem.: ${roomPerf.indicativeAverageLux ?? "—"} lx (${roomPerf.compliance.differencePercent !== null ? `${roomPerf.compliance.differencePercent >= 0 ? "+" : ""}${roomPerf.compliance.differencePercent.toFixed(0)}%` : "—"}) · ${roomPerf.compliance.meetsTarget ? "Voldoet" : "Voldoet niet"}`,
+      18,
+      ry,
+      { maxWidth: pageW - 32 },
+    );
+    ry += 10;
+  }
 
   doc.addPage("a4", "portrait");
   doc.setFontSize(16);
-  doc.setTextColor(15, 23, 42);
-  doc.text("Article list", 14, 18);
+  doc.setTextColor(...CHARCOAL);
+  doc.text("Artikellijst", 14, 18);
 
   let y = 28;
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   for (const row of articleList.rows) {
     const thumb = await loadProductThumbnailBase64(row.productId);
     const color = getProductDisplayColor(row.productId);
@@ -153,11 +286,11 @@ export async function exportLightingPlanPdf(
     if (thumb) {
       doc.addImage(thumb, "PNG", 20, y - 6, 8, 8);
     }
-    doc.setTextColor(30, 41, 59);
-    const line = `${row.brand} · ${row.productName} · ${row.articleNumber} · ×${row.quantity} · ${row.luminousFluxPerLuminaire} lm · ${row.powerPerLuminaire} W · ${Math.round(row.totalWattage)} W total`;
-    doc.text(line.slice(0, 110), 30, y);
-    y += 10;
-    if (y > pageH - 30) {
+    doc.setTextColor(...CHARCOAL);
+    const line = `${row.brand} · ${row.productName} · ${row.articleNumber} · ×${row.quantity} · ${row.luminousFluxPerLuminaire} lm · ${row.powerPerLuminaire} W · ${Math.round(row.totalWattage)} W totaal`;
+    doc.text(line.slice(0, 115), 30, y);
+    y += 9;
+    if (y > portraitH - 30) {
       doc.addPage("a4", "portrait");
       y = 20;
     }
@@ -165,67 +298,12 @@ export async function exportLightingPlanPdf(
 
   y += 4;
   doc.setFontSize(10);
-  doc.text(`Total luminaires: ${articleList.totalLuminaires}`, 14, y);
+  doc.setTextColor(...CHARCOAL);
+  doc.text(`Totaal armaturen: ${articleList.totalLuminaires}`, 14, y);
   y += 6;
-  doc.text(
-    `Total wattage: ${Math.round(articleList.totalInstalledWattage)} W`,
-    14,
-    y,
-  );
+  doc.text(`Totaal vermogen: ${Math.round(articleList.totalInstalledWattage)} W`, 14, y);
   y += 6;
-  doc.text(`Unique products: ${articleList.uniqueProductCount}`, 14, y);
-  y += 6;
-  doc.text(`Rooms: ${articleList.roomsIncludedCount}`, 14, y);
-
-  const roomsWithLuminaires = document.rooms.filter((room) =>
-    document.luminaires.some((item) => item.roomId === room.id),
-  );
-
-  for (const room of roomsWithLuminaires) {
-    doc.addPage("a4", "portrait");
-    let ry = 20;
-    doc.setFontSize(14);
-    doc.text("Room summary", 14, ry);
-    ry += 10;
-    doc.setFontSize(11);
-    doc.text(room.name, 14, ry);
-    ry += 7;
-    doc.setFontSize(9);
-    const areaM2 =
-      document.scale !== null
-        ? polygonAreaSquareMetres(room.vertices, document.scale)
-        : null;
-    doc.text(`Type: ${roomTypeLabel(room.roomType)}`, 14, ry);
-    ry += 5;
-    doc.text(
-      `Area: ${areaM2 !== null ? formatAreaSquareMetres(areaM2) : "—"}`,
-      14,
-      ry,
-    );
-    ry += 5;
-    doc.text(`Target lux: ${getEffectiveTargetLux(room)} lx`, 14, ry);
-    ry += 5;
-    const product =
-      room.selectedProductId !== null
-        ? getProductById(room.selectedProductId)
-        : undefined;
-    doc.text(
-      `Selected product: ${product ? `${product.brand} — ${product.name}` : "—"}`,
-      14,
-      ry,
-    );
-    ry += 5;
-    const placed = countLuminairesForRoom(document.luminaires, room.id);
-    const watts = document.luminaires
-      .filter((item) => item.roomId === room.id)
-      .reduce((sum, item) => {
-        const p = getProductById(item.productId);
-        return sum + (p?.powerWatts ?? 0);
-      }, 0);
-    doc.text(`Installed quantity: ${placed}`, 14, ry);
-    ry += 5;
-    doc.text(`Installed wattage: ${Math.round(watts)} W`, 14, ry);
-  }
+  doc.text(`Unieke producten: ${articleList.uniqueProductCount}`, 14, y);
 
   const totalPages = doc.getNumberOfPages();
   for (let page = 1; page <= totalPages; page += 1) {

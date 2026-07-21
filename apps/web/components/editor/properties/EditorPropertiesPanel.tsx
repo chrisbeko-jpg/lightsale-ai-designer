@@ -43,8 +43,8 @@ export function EditorPropertiesPanel({
             onClick={() => setPropertiesTab(tab.id)}
             className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium ${
               propertiesTab === tab.id
-                ? "bg-[var(--accent)] text-white"
-                : "text-[var(--muted)] hover:text-white"
+                ? "bg-[var(--accent)] text-[var(--charcoal)]"
+                : "text-[var(--muted)] hover:text-[var(--foreground)]"
             }`}
           >
             {tab.label}
@@ -72,7 +72,7 @@ export function EditorPropertiesPanel({
     <>
       <button
         type="button"
-        className="fixed bottom-4 left-4 z-20 rounded-lg bg-[var(--accent)] px-3 py-2 text-sm text-white shadow-lg md:hidden"
+        className="fixed bottom-4 left-4 z-20 rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--charcoal)] shadow-lg md:hidden"
         onClick={() => setMobileOpen(true)}
       >
         Properties
